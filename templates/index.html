@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Metrics Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <table id="metricsTable">
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Quarter PEG<br><span class="smaller-text">buy & sell before <span id="futureDate"></span><br>(9.5% in 6M)</span></th>
+                <th>Price-to-Revenue<br><span class="smaller-text">buy & sell before <span id="futureDate2"></span><br>(10% in 4M)</span></th>
+                <th>Metric 3</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        function updateTable(data, metricNumber) {
+            const table = document.getElementById('metricsTable');
+            const tbody = table.getElementsByTagName('tbody')[0];
+            
+            data.forEach(stock => {
+                let row = tbody.querySelector(`tr[data-symbol="${stock.symbol}"]`);
+                
+                if (!row) {
+                    row = tbody.insertRow();
+                    row.setAttribute('data-symbol', stock.symbol);
+                    row.insertCell(0).textContent = stock.symbol;  // Symbol
+                    row.insertCell(1);  // Metric1
+                    row.insertCell(2);  // Metric2
+                    row.insertCell(3);  // Metric3
+                }
+                
+                const cell = row.cells[metricNumber];
+                const metricValue = stock[`metric_${metricNumber}`];
+                const targetValue = stock[`target_${metricNumber}`];
+                
+                // If target exists, display both metric and target
+                if (targetValue !== undefined && targetValue !== null) {
+                    //cell.textContent = `${metricValue}\n(Target: ${targetValue})`;
+                    // Optional: use HTML to style it better
+                    cell.innerHTML = `${metricValue}<br><span style="font-size: 0.8em; color: gray">(TakeProfit: ${targetValue} $)</span>`;
+                } else {
+                    cell.textContent = metricValue;
+                }
+                
+                // Set color based on shouldBuy value
+                if (stock[`shouldBuy_${metricNumber}`] === 3) {
+                    cell.style.backgroundColor = 'lightgreen';
+                } else if (stock[`shouldBuy_${metricNumber}`] === 1) {
+                    cell.style.backgroundColor = 'lightcoral';
+                } 
+                else if (stock[`shouldBuy_${metricNumber}`] === 2) {
+                    cell.style.backgroundColor = 'yellow';
+                }
+                else {
+                    cell.style.backgroundColor = 'white';
+                }
+            });
+        }
+
+        function getFutureDate(weeks) {
+            const today = new Date();
+            const futureDate = new Date(today.setDate(today.getDate() + (weeks * 7))); 
+            return futureDate.toLocaleDateString('en-US', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+        
+        document.getElementById('futureDate').textContent = getFutureDate(24);
+        document.getElementById('futureDate2').textContent = getFutureDate(16);
+
+        async function fetchAndUpdateMetrics() {
+            try {
+                const metric1Response = await fetch('/get_metric1');
+                const metric1Data = await metric1Response.json();
+                updateTable(metric1Data, 1);
+
+                const metric2Response = await fetch('/get_metric2');
+                const metric2Data = await metric2Response.json();
+                updateTable(metric2Data, 2);
+
+                const metric3Response = await fetch('/get_metric3');
+                const metric3Data = await metric3Response.json();
+                updateTable(metric3Data, 3);
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+            }
+        }
+
+        // Initial fetch
+        fetchAndUpdateMetrics();
+
+        // Update every 10 minutes
+        setInterval(fetchAndUpdateMetrics, 600000);
+    </script>
+</body>
+</html>
