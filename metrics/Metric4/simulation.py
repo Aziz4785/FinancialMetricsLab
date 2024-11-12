@@ -15,7 +15,7 @@ TRANSACITON_FEE = 2
 DIVPAYOUT_LOWER_BOUND = -0.02
 DIVPAYOUT_UPPER_BOUND = 0.1
 REVGROWTH_LOW_BOUND = 0.09
-NBR_OF_SIMULATION = 600
+NBR_OF_SIMULATION = 800
 SELL_LIMIT_PERCENTAGE_1 = 5.7
 WAITING_IN_WEEKS = 4
 A_GOOD_RETURN = 0.05
@@ -23,7 +23,7 @@ A_BAD_RETURN = 0.025
 GRID_SEARCH = False
 SAVE_ONLY_BAD_PRED=False
 USE_ML = False
-stocks = load_stocks(250,'C:/Users/aziz8/Documents/FinancialMetricsLab/stock_list.csv')
+stocks = load_stocks(500,'C:/Users/aziz8/Documents/FinancialMetricsLab/stock_list.csv')
 historical_data_for_stock, _, income_dict, hist_data_df_for_stock,_,cashflow_dict,estimations_dict = fetch_stock_data(stocks)
 
 
@@ -59,7 +59,7 @@ def simulation():
         nbr_of_None_evgp_ratio = 0
         nbr_of_None_income = 0
         if not GRID_SEARCH:
-            if i%10==0:
+            if i%20==0:
                 print(f"Simulation {i+1}: {random_date}")
 
         stocks_in_range = []
@@ -68,7 +68,7 @@ def simulation():
                 if income_dict[stock] is None:
                     nbr_of_None_income+=1
                 if not GRID_SEARCH:
-                    if i%10==0:
+                    if i%20==0:
                         print("one of the input data is None")
                 continue
             price_at_date = extract_stock_price_at_date(random_date,historical_data_for_stock[stock])
@@ -87,7 +87,7 @@ def simulation():
                     
 
         if not GRID_SEARCH:
-                if i%10==0:
+                if i%20==0:
                     print(f"  at that date, fraction of stocks having None incomes : {nbr_of_None_income/len(stocks)}")
                     if (len(stocks)-nbr_of_None_income)!=0:
                         print(f"                fraction of valid stocks having None prices : {nbr_of_None_prices/(len(stocks)-nbr_of_None_income)}")
@@ -117,14 +117,14 @@ def simulation():
                 if price_after_1W is None:
                     continue
                 if not GRID_SEARCH:
-                    if i%10==0:
+                    if i%20==0:
                         print(f"we buy {quantity} of {stock} at {initial_price}$ its max price is {max_price_1W} and after {WAITING_IN_WEEKS} week (on {date_after_1W}) it is {price_after_1W}")
                 if max_percentage_increase >= SELL_LIMIT_PERCENTAGE_1:
                     gain_for_this_stock= (SELL_LIMIT_PERCENTAGE_1/100)*initial_price*quantity - 2*TRANSACITON_FEE
                 else:
                     gain_for_this_stock = (price_after_1W - initial_price)*quantity - 2*TRANSACITON_FEE
                 if not GRID_SEARCH:
-                    if i%10==0:
+                    if i%20==0:
                         print(f"   -> {gain_for_this_stock} $")
                 if gain_for_this_stock >= quantity*initial_price*A_GOOD_RETURN:
                     nbr_good +=1
@@ -135,6 +135,7 @@ def simulation():
                             'symbol': stock,
                             'price': initial_price,
                             'divpayout_ratio':stock_to_buy[2],
+                            'rev_growth':stock_to_buy[3],
                             'to_buy': 1
                         })
                 elif gain_for_this_stock < quantity*initial_price*A_BAD_RETURN:
@@ -146,6 +147,7 @@ def simulation():
                             'symbol': stock,
                             'price': initial_price,
                             'divpayout_ratio':stock_to_buy[2],
+                            'rev_growth':stock_to_buy[3],
                             'to_buy': 0
                         })
                 nbr_total+=1

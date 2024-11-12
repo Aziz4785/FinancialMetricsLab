@@ -10,6 +10,7 @@ to run : py -m experiment1.data_extraction  (if it doesnt work add.py)
 """
 
 NBR_OF_SIMULATION = 500
+WAITING_IN_WEEKS = 5
 if 'df_results' not in locals():
     df_results = pd.DataFrame()
 
@@ -31,7 +32,7 @@ for i,random_date in enumerate(random_dates):
         print(i)
     random_date = random_date.date()
     gain_on_that_simul=0
-    date_after_1M = random_date + pd.DateOffset(weeks=4)
+    date_after_1M = random_date + pd.DateOffset(weeks=WAITING_IN_WEEKS)
     random_stocks = random.sample(stocks, 48)
 
     for stock in random_stocks:
