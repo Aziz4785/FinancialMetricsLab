@@ -32,7 +32,7 @@ best subset of features so far :
 """
 """
 these variables are almost the same (correlation>=0.99): 
--price sma_10d max_in_4M max_in_8M min_in_4M min_in_8M sma_10d_2months_ago sma_50d sma_100d sma_10d_1weeks_ago sma_200d sma_10d_5months_ago sma_10d_7months_ago sma_10d_11months_ago
+-price sma_10d  max_in_1M  min_in_1M: max_in_4M max_in_8M min_in_4M min_in_8M sma_10d_2months_ago sma_50d sma_100d sma_10d_1weeks_ago sma_200d sma_10d_5months_ago sma_10d_7months_ago sma_10d_11months_ago
 -marketCap - EV
 -markRevRatio - fwdPriceTosale_diff
 -peg - peg_sector_comp
@@ -44,7 +44,7 @@ df = df.sample(frac=1).reset_index(drop=True)
 
 df = pd.get_dummies(df, columns=['sector'])
 
-X = df.drop(columns=['to_buy', 'date', 'symbol','peg_sector_comp','fwdPriceTosale_diff','max_in_8M','max_in_4M','sma_10d_2months_ago','min_in_8M','min_in_4M','EV','sma_50d','sma_10d_6months_ago','sma_10d_3months_ago','sma_10d_4months_ago','sma_10d_1months_ago','sma_10d' ,'sma_100d', 'sma_10d_1weeks_ago' ,'sma_200d', 'sma_10d_5months_ago', 'sma_10d_7months_ago', 'sma_10d_11months_ago'], errors='ignore')
+X = df.drop(columns=['to_buy', 'date', 'symbol', 'max_in_2W' , 'min_in_2W','min_in_1M','max_in_1M','peg_sector_comp','fwdPriceTosale_diff','max_in_8M','max_in_4M','sma_10d_2months_ago','min_in_8M','min_in_4M','EV','sma_50d','sma_10d_6months_ago','sma_10d_3months_ago','sma_10d_4months_ago','sma_10d_1months_ago','sma_10d' ,'sma_100d', 'sma_10d_1weeks_ago' ,'sma_200d', 'sma_10d_5months_ago', 'sma_10d_7months_ago', 'sma_10d_11months_ago'], errors='ignore')
 y = df['to_buy']
 
 # Split the data into training and testing sets
@@ -60,7 +60,7 @@ X_test_scaled = scaler.transform(X_test)
 # Initialize the RandomForestClassifier
 rf_model = RandomForestClassifier(n_estimators=300, random_state=42, n_jobs=-1)
 
-for k in range(6,24,2):
+for k in range(26,30,2):
     print(f"-----number of features : {k}")
     # Initialize RFE with the RF model and specify the number of features to select
     # You can choose 'n_features_to_select' based on your requirements

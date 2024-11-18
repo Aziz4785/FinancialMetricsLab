@@ -55,6 +55,31 @@ feature_importance =['price', 'income_lag_days', 'marketCap', 'max_minus_min', '
        'peg_sector_relative', '6M_return_sector_relative',
        '1M_return_sector_relative', '5M_return_sector_relative']
 
+feature_importance = ['price', 'marketCap', 'balance_lag_days', 'max_in_1M', 'min_in_1M',
+       'min8M_lag', 'max_minus_min8M', 'markRevRatio', 'pe', 'peg',
+       'EVEbitdaRatio', 'EVGP', 'EVRevenues', 'fwdPriceTosale',
+       'var_sma50D_100D', 'deriv_5m', '3M_return', 'pe_sector_relative',
+       'peg_sector_relative', '1M_return_sector_relative',
+       '4M_return_sector_relative', '7M_return_sector_relative',
+       '6Mreturn_sector_comp', '2Mreturn_sector_comp']
+feature_importance =['price', 'income_lag_days', 'marketCap', 'max_minus_min',
+       'max_minus_min1M', 'min8M_lag', 'max_minus_min8M', 'markRevRatio', 'pe',
+       'peg', 'EVEbitdaRatio', 'EVGP', 'EVRevenues', 'fwdPriceTosale',
+       'var_sma50D_100D', 'deriv_1m', 'deriv_5m', '3M_return',
+       'pe_sector_relative', 'peg_sector_relative',
+       '2M_return_sector_relative', '4M_return_sector_relative',
+       '7M_return_sector_relative', '6Mreturn_sector_comp']
+
+feature_importance =['price', 'marketCap', 'balance_lag_days', 'max_minus_min',
+       'max_minus_min1M', 'max_in_2W', 'min_in_2W', 'min8M_lag',
+       'max_minus_min8M', 'markRevRatio', 'pe', 'peg', 'EVEbitdaRatio', 'EVGP',
+       'EVRevenues', 'fwdPriceTosale', 'deriv_5m', 'deriv_6m', '3M_return',
+       'pe_sector_relative', 'peg_sector_relative',
+       'EVEbitdaRatio_sector_relative', '1M_return_sector_relative',
+       '2M_return_sector_relative', '4M_return_sector_relative',
+       '7M_return_sector_relative', 'deriv_3m_sector_relative',
+       '6Mreturn_sector_comp']
+
 df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric4/ml/processed_data.csv')
 
 X = df.drop(columns=['symbol', 'date', 'to_buy'])

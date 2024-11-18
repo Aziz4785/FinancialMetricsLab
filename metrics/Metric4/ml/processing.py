@@ -141,19 +141,13 @@ df['EV'] = df.apply(lambda row: row['marketCap']+row['total_debt']-row['cashcash
 
 print("-------fundamental metrics done----------")
 results_max4M = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=4)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
-
 df['max_in_4M'], df['max4M_date'] = zip(*[(None, None) if result is None else result for result in results_max4M])
 df['max4M_lag']=df.apply(lambda row: (pd.to_datetime(row['date']) - pd.to_datetime(row['max4M_date'])).days, axis=1)
-#df['max_in_4M']=df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=4)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
-#df['min_in_4M']=df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=4)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
 results_min4M = df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=4)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
-
 df['min_in_4M'], df['min4M_date'] = zip(*[(None, None) if result is None else result for result in results_min4M])
 df['min4M_lag']=df.apply(lambda row: (pd.to_datetime(row['date']) - pd.to_datetime(row['min4M_date'])).days, axis=1)
-
 df = df.drop('min4M_date', axis=1)
 df = df.drop('max4M_date', axis=1)
-
 df['max_minus_min']=df.apply(lambda row: None if (row['max_in_4M'] is None or row['min_in_4M'] is None) else row['max_in_4M'] - row['min_in_4M'], axis=1)
 df['var_price_to_minmax'] = df.apply(lambda row: 
     None if row['max_minus_min'] is None or row['max_minus_min'] == 0 
@@ -165,24 +159,55 @@ df['maxPercen_4M'] = df.apply(lambda row:
     axis=1)
 
 
-#df['max_in_8M']=df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=8)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
-results_max8M = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=8)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
-
-df['max_in_8M'], df['max8M_date'] = zip(*[(None, None) if result is None else result for result in results_max8M])
-df['max8M_lag']=df.apply(lambda row: None if row['max8M_date'] is None else (pd.to_datetime(row['date']) - pd.to_datetime(row['max8M_date'])).days, axis=1)
-
-
-df['dist_max8M_4M'] = df.apply(lambda row: 
-    row['max8M_lag'] - row['max4M_lag'], 
+results_max1M = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=1)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+df['max_in_1M'], df['max1M_date'] = zip(*[(None, None) if result is None else result for result in results_max1M])
+df['max1M_lag']=df.apply(lambda row: (pd.to_datetime(row['date']) - pd.to_datetime(row['max1M_date'])).days, axis=1)
+results_min1M = df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=1)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+df['min_in_1M'], df['min1M_date'] = zip(*[(None, None) if result is None else result for result in results_min1M])
+df['min1M_lag']=df.apply(lambda row: (pd.to_datetime(row['date']) - pd.to_datetime(row['min1M_date'])).days, axis=1)
+df = df.drop('min1M_date', axis=1)
+df = df.drop('max1M_date', axis=1)
+df['max_minus_min1M']=df.apply(lambda row: None if (row['max_in_1M'] is None or row['min_in_1M'] is None) else row['max_in_1M'] - row['min_in_1M'], axis=1)
+df['var_price_to_minmax1M'] = df.apply(lambda row: 
+    None if row['max_minus_min1M'] is None or row['max_minus_min1M'] == 0 
+    else (row['price'] - row['min_in_1M'])/row['max_minus_min1M'], 
+    axis=1)
+df['maxPercen_1M'] = df.apply(lambda row: 
+    None if row['price'] is None or row['price'] == 0 
+    else (row['max_in_1M'] - row['price'])/row['price'], 
     axis=1)
 
 
+results_max2W = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(weeks=2)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+df['max_in_2W'], df['max2W_date'] = zip(*[(None, None) if result is None else result for result in results_max2W])
+df['max2W_lag']=df.apply(lambda row: (pd.to_datetime(row['date']) - pd.to_datetime(row['max2W_date'])).days, axis=1)
+results_min2W = df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(weeks=2)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+df['min_in_2W'], df['min2W_date'] = zip(*[(None, None) if result is None else result for result in results_min2W])
+df['min2W_lag']=df.apply(lambda row: (pd.to_datetime(row['date']) - pd.to_datetime(row['min2W_date'])).days, axis=1)
+df = df.drop('min2W_date', axis=1)
+df = df.drop('max2W_date', axis=1)
+df['max_minus_min2W']=df.apply(lambda row: None if (row['max_in_2W'] is None or row['min_in_2W'] is None) else row['max_in_2W'] - row['min_in_2W'], axis=1)
+df['var_price_to_minmax2W'] = df.apply(lambda row: 
+    None if row['max_minus_min2W'] is None or row['max_minus_min2W'] == 0 
+    else (row['price'] - row['min_in_2W'])/row['max_minus_min2W'], 
+    axis=1)
+df['maxPercen_2W'] = df.apply(lambda row: 
+    None if row['price'] is None or row['price'] == 0 
+    else (row['max_in_2W'] - row['price'])/row['price'], 
+    axis=1)
+
+
+#df['max_in_8M']=df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=8)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+results_max8M = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=8)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+df['max_in_8M'], df['max8M_date'] = zip(*[(None, None) if result is None else result for result in results_max8M])
+df['max8M_lag']=df.apply(lambda row: None if row['max8M_date'] is None else (pd.to_datetime(row['date']) - pd.to_datetime(row['max8M_date'])).days, axis=1)
+df['dist_max8M_4M'] = df.apply(lambda row: 
+    row['max8M_lag'] - row['max4M_lag'], 
+    axis=1)
 #df['min_in_8M']=df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=8)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
 results_min8M = df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=8)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
 df['min_in_8M'], df['min8M_date'] = zip(*[(None, None) if result is None else result for result in results_min8M])
 df['min8M_lag']=df.apply(lambda row: None if row['min8M_date'] is None else (pd.to_datetime(row['date']) - pd.to_datetime(row['min8M_date'])).days, axis=1)
-
-
 df['dist_min8M_4M'] = df.apply(lambda row: 
     row['min8M_lag'] - row['min4M_lag'], 
     axis=1)
@@ -198,6 +223,20 @@ df['var_price_minmax8M'] = df.apply(lambda row:
 df['maxPercen_8M'] = df.apply(lambda row: 
     None if row['price'] is None or row['price'] == 0 or row['max_in_8M'] is None 
     else (row['max_in_8M'] - row['price'])/row['price'], 
+    axis=1)
+
+
+df['Spread1Mby8M'] = df.apply(lambda row: 
+    None if row['max_minus_min8M'] is None or row['max_minus_min8M'] == 0 
+    else  row['max_minus_min1M']/row['max_minus_min8M'], 
+    axis=1)
+df['Spread4Mby8M'] = df.apply(lambda row: 
+    None if row['max_minus_min8M'] is None or row['max_minus_min8M'] == 0 
+    else  row['max_minus_min']/row['max_minus_min8M'], 
+    axis=1)
+df['Spread1Mby4M'] = df.apply(lambda row: 
+    None if row['max_minus_min'] is None or row['max_minus_min'] == 0 
+    else  row['max_minus_min1M']/row['max_minus_min'], 
     axis=1)
 
 print("--------max and low done------------")
@@ -526,7 +565,7 @@ total_rows = len(df)
 
 # drop columns with a lot of nulls
 null_percentages = (df.isnull().sum() / total_rows) * 100
-columns_to_drop = null_percentages[null_percentages > 12].index
+columns_to_drop = null_percentages[null_percentages > 10].index
 df = df.drop(columns=columns_to_drop)
 print(f"Columns dropped: {list(columns_to_drop)}")
 
@@ -537,18 +576,23 @@ df = engineer_stock_features(df)
 df = calculate_sector_relatives(df, 'sector')
 df = df.dropna()
 print("length of df after   engineer_stock_features: ",len(df))
-df['3Mreturn_sector_comp']= df.apply(lambda row: 
-    row['3M_return']-row['3M_return_sector_relative'], 
-    axis=1)
-df['6Mreturn_sector_comp']= df.apply(lambda row: 
-    row['6M_return']-row['6M_return_sector_relative'], 
-    axis=1)
-df['2Mreturn_sector_comp']= df.apply(lambda row: 
-    row['2M_return']-row['2M_return_sector_relative'], 
-    axis=1)
-df['peg_sector_comp']= df.apply(lambda row: 
-    row['peg']-row['peg_sector_relative'], 
-    axis=1)
+if '3M_return' in df.columns and '3M_return_sector_relative' in df.columns:
+    df['3Mreturn_sector_comp']= df.apply(lambda row: 
+        row['3M_return']-row['3M_return_sector_relative'], 
+        axis=1)
+if '6M_return' in df.columns and '6M_return_sector_relative' in df.columns:
+    df['6Mreturn_sector_comp']= df.apply(lambda row: 
+        row['6M_return']-row['6M_return_sector_relative'], 
+        axis=1)
+    
+if '2M_return' in df.columns and '2M_return_sector_relative' in df.columns:
+    df['2Mreturn_sector_comp']= df.apply(lambda row: 
+        row['2M_return']-row['2M_return_sector_relative'], 
+        axis=1)
+if 'peg' in df.columns and 'peg_sector_relative' in df.columns:
+    df['peg_sector_comp']= df.apply(lambda row: 
+        row['peg']-row['peg_sector_relative'], 
+        axis=1)
 df = df.dropna()
 print("length of df s: ",len(df))
 print()

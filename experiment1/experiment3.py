@@ -11,10 +11,11 @@ from .utils import *
 """
 to run : py -m experiment1.experiment3
 """
-df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/cleaned_data.csv')
-# df = df[df['dividend_payout_ratio'] >= -0.02]
-# df = df[df['est_rev_growth'] >= 0.09]
-# df = df[df['dividend_payout_ratio'] <= 0.1]
+df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/cleaned_data_10_in_2M.csv')
+#df = df[df['dividend_payout_ratio'] >= -0.13]
+#df = df[df['est_rev_growth'] >= 0.09]
+#df = df[df['e_future_estimated_eps'] <= -0.08]
+df = df[df['EVEbitdaRatio'] <= 32]
 def find_best_fit(vectorY):
     """
     Find whether the data fits better to a linear (y=ax+b) or quadratic (y=ax^2+bx+c) equation
@@ -59,15 +60,17 @@ def print_percentiles(df):
     
     for column in df.columns:
         if column not in columns_to_skip:
-            p15 = df[column].quantile(0.15)
-            p85 = df[column].quantile(0.85)
+            p15 = df[column].quantile(0.05)
+            p85 = df[column].quantile(0.95)
             print(f"{column}:")
-            print(f"  15th percentile: {p15:.2f}")
-            print(f"  85th percentile: {p85:.2f}")
+            #print(f"  10th percentile: {p15:.2f}")
+            #print(f"  90th percentile: {p85:.2f}")
 
             # Filter values between p15 and p85
             filtered_values = df[column][(df[column] >= p15) & (df[column] <= p85)]
-            
+            if len(filtered_values)<100:
+                print("too few values to perform analysis")
+                continue
             # Calculate 8 segments using percentiles
             segments = [0, 12.5, 25, 37.5, 50, 62.5, 75, 87.5, 100]
             segment_values = [filtered_values.quantile(p/100) for p in segments]
@@ -106,7 +109,7 @@ def print_percentiles(df):
                     # print(f"      Target ratio: {ratio:.2%}")
 
                 score,result = find_best_fit(vectorY)
-                if score >0.8:
+                if score >0.9:
                     print()
                     print(f"{column}:")
                     print(f"we divide the values of {column} into equal sized segments:")

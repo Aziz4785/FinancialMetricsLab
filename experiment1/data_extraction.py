@@ -10,7 +10,7 @@ to run : py -m experiment1.data_extraction  (if it doesnt work add.py)
 """
 
 NBR_OF_SIMULATION = 500
-WAITING_IN_WEEKS = 5
+WAITING_IN_WEEKS = 8
 if 'df_results' not in locals():
     df_results = pd.DataFrame()
 
@@ -21,7 +21,7 @@ historical_data_for_stock, market_cap_dict, income_dict, hist_data_df_for_stock,
 
 today = pd.Timestamp.today()
 min_random_date = today - pd.DateOffset(months=68)
-max_random_date = today - pd.DateOffset(months=2)
+max_random_date = today - pd.DateOffset(months=3)
 date_range = pd.date_range(start=min_random_date, end=max_random_date, freq='D')
 date_range = date_range[(date_range.weekday < 5) & (date_range.year != 2020)]
 max_simulation = min(NBR_OF_SIMULATION,len(date_range)-1)
@@ -57,9 +57,9 @@ for i,random_date in enumerate(random_dates):
             continue
         percentage = (max_price_1M-price_at_date)/price_at_date
         to_buy=None
-        if percentage>=0.05:
+        if percentage>=0.1025:
             to_buy=1
-        elif percentage<=0.025:
+        elif percentage<=0.06:
             to_buy=0
         income_features = extract_income_features(random_date,income_dict[stock])
         balance_features = extract_balance_features(random_date,balance_shit_dict[stock])
@@ -100,6 +100,8 @@ for i,random_date in enumerate(random_dates):
             row_dict['est_rev_growth'] = (row_dict['e_future_estim_rev']-row_dict['e_current_estim_rev']) / row_dict['e_current_estim_rev'] if row_dict['e_current_estim_rev'] != 0 else None
             row_dict['fcf'] = row_dict['c_operatingCashFlow']-row_dict['c_capitalExpenditure']
             row_dict['fcf_yield'] = row_dict['fcf'] / row_dict['market_cap'] if row_dict['market_cap'] != 0 else None
+            row_dict['fcf_margin'] = row_dict['fcf'] / row_dict['i_revenue'] if row_dict['i_revenue'] != 0 else None
+            
             row_dict['acid_test'] = (row_dict['b_cashAndShortTermInvestments']+row_dict['b_netReceivables']) / row_dict['b_totalCurrentLiabilities'] if row_dict['b_totalCurrentLiabilities'] != 0 else None
             row_dict['1Y_return'] = ((row_dict['price']-row_dict['price_1Y'])/row_dict['price_1Y'])*100
             row_dict['6M_return'] = ((row_dict['price']-row_dict['price_6M'])/row_dict['price_6M'])*100

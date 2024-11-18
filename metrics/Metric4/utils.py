@@ -927,7 +927,7 @@ def calculate_sector_relatives(df, sector_column):
     df_new = df.copy()
     
     # Metrics to calculate sector-relatives for
-    metrics = ['pe','peg', 'markRevRatio', 'fwdPriceTosale_diff','EVEbitdaRatio', '3M_return','6M_return','1W_return','1M_return','2M_return','4M_return','5M_return','1y_return','6M_return','7M_return']
+    metrics = ['pe','peg', 'EVGP','EVRevenues','markRevRatio', 'fwdPriceTosale_diff','EVEbitdaRatio', '3M_return','6M_return','1W_return','1M_return','2M_return','4M_return','5M_return','1y_return','6M_return','7M_return','max_minus_min', 'deriv_3m', 'deriv_4m',]
     
     # Calculate sector-relative metrics
     for metric in metrics:
