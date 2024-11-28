@@ -13,16 +13,23 @@ to run : py -m metrics.Metric5.ml.xgboost_grid
 
 def optimize_xgboost(df):
     # Define feature columns
-    feature_cols2 = ['evebitda', 'netIncome', 'marketCap', 'curr_est_eps', 'future_est_rev',
-       'debtToPrice', 'markRevRatio', 'PS_to_PEG', 'dividend_payout_ratio',
-       'var_sma10D_50D', 'var_sma50D_100D', 'var_sma10D_100D', 'deriv_4m',
-       'peg_normalized', 'EVGP_normalized', 'combined_valuation_score']
+    feature_cols = ['RnD_expenses', 'eps_growth', 'deriv_min8M',
+       'sma_100d_to_sma_200d_ratio']
 
-    feature_cols =['netIncome', 'marketCap', 'curr_est_eps', 'future_est_rev',
-       'debtToPrice', 'PS_to_PEG', 'dividend_payout_ratio', 'var_sma50D_100D',
-       'var_sma10D_100D', 'peg_normalized', 'EVGP_normalized',
-       'combined_valuation_score']
+    feature_cols2 =['evebitda', 'RnD_expenses', 'marketCap', 'eps_growth', 'peg',
+       'EVRevenues', 'fwdPriceTosale', 'var_sma10D_100D', 'deriv_2m',
+       'deriv_max4M', 'deriv_min8M', '1Y_6M_growth',
+       'sma_100d_to_sma_200d_ratio', 'combined_valuation_score']
     
+    feature_cols2 =['evebitda', 'RnD_expenses', 'marketCap', 'eps_growth', 'peg',
+       'fwdPriceTosale', 'var_sma10D_100D', 'deriv_2m', 'deriv_min8M',
+       '1Y_6M_growth', 'sma_100d_to_sma_200d_ratio',
+       'combined_valuation_score']   
+    
+    feature_cols2 =['RnD_expenses', 'eps_growth', 'peg', 'var_sma10D_100D', 'deriv_min8M',
+       '1Y_6M_growth', 'sma_100d_to_sma_200d_ratio',
+       'combined_valuation_score']  
+     
     # Prepare X and y
     X = df[feature_cols]
     y = df['to_buy']
@@ -95,6 +102,8 @@ df = pd.get_dummies(df, columns=['sector'])
 best_model = optimize_xgboost(df)
 
 """
-Best parameters: {'colsample_bytree': 0.7, 'gamma': 0, 'learning_rate': 0.3, 'max_depth': 5, 'min_child_weight': 1, 'n_estimators': 200, 'subsample': 0.8}
- {'colsample_bytree': 0.9, 'gamma': 0.1, 'learning_rate': 0.1, 'max_depth': 7, 'min_child_weight': 1, 'n_estimators': 300, 'subsample': 0.7}
+{'colsample_bytree': 0.9, 'gamma': 0.2, 'learning_rate': 0.3, 'max_depth': 5, 'min_child_weight': 1, 'n_estimators': 300, 'subsample': 0.8}
+{'colsample_bytree': 0.8, 'gamma': 0.1, 'learning_rate': 0.1, 'max_depth': 5, 'min_child_weight': 1, 'n_estimators': 300, 'subsample': 0.9}
+{'colsample_bytree': 0.9, 'gamma': 0, 'learning_rate': 0.3, 'max_depth': 7, 'min_child_weight': 1, 'n_estimators': 300, 'subsample': 0.7}
+{'colsample_bytree': 0.8, 'gamma': 0, 'learning_rate': 0.1, 'max_depth': 7, 'min_child_weight': 1, 'n_estimators': 300, 'subsample': 0.7}
 """

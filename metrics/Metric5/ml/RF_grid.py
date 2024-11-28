@@ -16,20 +16,23 @@ def optimize_random_forest(df):
     print("length of df : ",len(df))
     # Define feature columns
     
-    feature_cols1 = ['price', 'evebitda', 'sma_50d', 'marketCap', 'EV', 'max_in_2W',
-       'markRevRatio', 'peg', 'EVRevenues', 'fwdPriceTosale',
-       'fwdPriceTosale_diff', 'var_sma100D', 'var_sma50D_100D',
-       'var_sma10D_100D', '1y_return', '1Y_6M_growth']
+    feature_cols = ['marketCap', 'fwdPriceTosale', 'sma_100d_to_sma_200d_ratio',
+       'combined_valuation_score']
     
-    feature_cols =['evebitda', 'sma_10d', 'marketCap', 'peg', 'EVRevenues', '1y_return']
+    feature_cols =['evebitda', 'sma_50d', 'marketCap', 'markRevRatio', 'EVRevenues',
+       'fwdPriceTosale', 'sma_100d_to_sma_200d_ratio',
+       'combined_valuation_score']
     
-    feature_cols =['evebitda', 'sma_10d', 'sma_50d', 'marketCap', 'EV', 'max_minus_min8M',
-       'markRevRatio', 'peg', 'EVGP', 'EVRevenues', 'fwdPriceTosale',
-       'var_sma100D', 'var_sma50D_100D', 'var_sma10D_100D', '1y_return',
-       '1Y_6M_growth']
+    feature_cols =['evebitda', 'sma_200d', 'sma_50d', 'marketCap', 'markRevRatio',
+       'EVRevenues', 'fwdPriceTosale', 'deriv_2m', '1Y_6M_growth',
+       'sma_100d_to_sma_200d_ratio', 'combined_valuation_score',
+       'sma10_yoy_growth']
     
-    feature_cols = ['price', 'evebitda', 'marketCap', 'markRevRatio', 'peg', 'EVRevenues',
-       'fwdPriceTosale', 'var_sma50D_100D', 'var_sma10D_100D', '1y_return']
+    feature_cols1 = ['evebitda', 'sma_200d', 'sma_50d', 'marketCap', 'EV', 'markRevRatio',
+       'peg', 'netDebtToPrice', 'EVGP', 'EVRevenues', 'fwdPriceTosale',
+       'deriv_2m', '4M_return', '1Y_6M_growth', 'sma_50d_to_sma_100d_ratio',
+       'sma_100d_to_sma_200d_ratio', 'combined_valuation_score',
+       'sma10_yoy_growth']
     
     # Prepare X and y
     X = df[feature_cols1]
@@ -95,8 +98,8 @@ best_model = optimize_random_forest(df)
 print(best_model)
 
 """
-{'max_depth': None, 'max_features': 'sqrt', 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 100}
-{'max_depth': None, 'max_features': 'sqrt', 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 200}
-{'max_depth': None, 'max_features': None, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 300}
-{'max_depth': None, 'max_features': None, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 200}
+{'max_depth': 10, 'max_features': None, 'min_samples_leaf': 1, 'min_samples_split': 5, 'n_estimators': 100}
+{'max_depth': None, 'max_features': 'log2', 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 100}
+{'max_depth': 10, 'max_features': 'sqrt', 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 100}
+{'max_depth': 10, 'max_features': 'sqrt', 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 300}
 """

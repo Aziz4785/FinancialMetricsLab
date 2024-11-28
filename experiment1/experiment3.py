@@ -11,11 +11,14 @@ from .utils import *
 """
 to run : py -m experiment1.experiment3
 """
-df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/cleaned_data_10_in_2M.csv')
-#df = df[df['dividend_payout_ratio'] >= -0.13]
-#df = df[df['est_rev_growth'] >= 0.09]
-#df = df[df['e_future_estimated_eps'] <= -0.08]
-df = df[df['EVEbitdaRatio'] <= 32]
+df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/cleaned_data_9_in_8W.csv')
+#df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/cleaned_data_augmented_0.csv')
+df = df[df['dividend_payout_ratio'] >=-0.08]
+#df = df[df['1Y_return'] <= -17.73]
+#df = df[df['e_current_estimated_eps'] <= 0.31]
+#df = df[df['EVEbitdaRatio'] <= 24.73]
+#df = df[df['peRatio']<=24.56]
+print("length of df : ",len(df))
 def find_best_fit(vectorY):
     """
     Find whether the data fits better to a linear (y=ax+b) or quadratic (y=ax^2+bx+c) equation
@@ -71,8 +74,11 @@ def print_percentiles(df):
             if len(filtered_values)<100:
                 print("too few values to perform analysis")
                 continue
-            # Calculate 8 segments using percentiles
-            segments = [0, 12.5, 25, 37.5, 50, 62.5, 75, 87.5, 100]
+            # Calculate segments using percentiles
+            #segments = [0, 33.33,66.66, 100]
+            #segments = [0, 25, 50, 75, 100]
+            #segments = [0, 12.5, 25, 37.5, 50, 62.5, 75, 87.5, 100]
+            segments = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
             segment_values = [filtered_values.quantile(p/100) for p in segments]
 
             # Create list of valid segments (where boundaries are different)

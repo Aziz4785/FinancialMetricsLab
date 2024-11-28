@@ -9,7 +9,8 @@ training_data_path = 'C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metri
 # Read the CSV file
 df = pd.read_csv(training_data_path)
 
-
+df['date'] = pd.to_datetime(df['date'])
+df = df[df['date'] > '2019-11-10']
 
 # Remove duplicates
 df.drop_duplicates(inplace=True)

@@ -11,17 +11,19 @@ to run : py -m experiment1.data_extraction  (if it doesnt work add.py)
 
 NBR_OF_SIMULATION = 500
 WAITING_IN_WEEKS = 8
+GOOD_RETURN = 0.09
+BAD_RETURN = 0.5
 if 'df_results' not in locals():
     df_results = pd.DataFrame()
 
-stocks = load_stocks(500,'C:/Users/aziz8/Documents/FinancialMetricsLab/stock_list.csv')
+stocks = load_stocks(510,'C:/Users/aziz8/Documents/FinancialMetricsLab/stock_list.csv')
 print("stocks : ")
 print(stocks)
 historical_data_for_stock, market_cap_dict, income_dict, hist_data_df_for_stock,balance_shit_dict,cashflow_dict,estimations_dict,old_prices_dict = fetch_stock_data(stocks)
 
 today = pd.Timestamp.today()
-min_random_date = today - pd.DateOffset(months=68)
-max_random_date = today - pd.DateOffset(months=3)
+min_random_date = today - pd.DateOffset(months=62)
+max_random_date = today - pd.DateOffset(weeks=WAITING_IN_WEEKS+1)
 date_range = pd.date_range(start=min_random_date, end=max_random_date, freq='D')
 date_range = date_range[(date_range.weekday < 5) & (date_range.year != 2020)]
 max_simulation = min(NBR_OF_SIMULATION,len(date_range)-1)
@@ -57,9 +59,9 @@ for i,random_date in enumerate(random_dates):
             continue
         percentage = (max_price_1M-price_at_date)/price_at_date
         to_buy=None
-        if percentage>=0.1025:
+        if percentage>=GOOD_RETURN:
             to_buy=1
-        elif percentage<=0.06:
+        elif percentage<=BAD_RETURN:
             to_buy=0
         income_features = extract_income_features(random_date,income_dict[stock])
         balance_features = extract_balance_features(random_date,balance_shit_dict[stock])
@@ -101,7 +103,9 @@ for i,random_date in enumerate(random_dates):
             row_dict['fcf'] = row_dict['c_operatingCashFlow']-row_dict['c_capitalExpenditure']
             row_dict['fcf_yield'] = row_dict['fcf'] / row_dict['market_cap'] if row_dict['market_cap'] != 0 else None
             row_dict['fcf_margin'] = row_dict['fcf'] / row_dict['i_revenue'] if row_dict['i_revenue'] != 0 else None
-            
+            row_dict['operating_cashflow'] = row_dict['c_netCashProvidedByOperatingActivities'] / row_dict['b_totalCurrentLiabilities'] if row_dict['b_totalCurrentLiabilities'] != 0 else None
+            row_dict['cashflow_to_debt'] = row_dict['c_netCashProvidedByOperatingActivities'] / row_dict['b_totalDebt'] if row_dict['b_totalDebt'] != 0 else None
+
             row_dict['acid_test'] = (row_dict['b_cashAndShortTermInvestments']+row_dict['b_netReceivables']) / row_dict['b_totalCurrentLiabilities'] if row_dict['b_totalCurrentLiabilities'] != 0 else None
             row_dict['1Y_return'] = ((row_dict['price']-row_dict['price_1Y'])/row_dict['price_1Y'])*100
             row_dict['6M_return'] = ((row_dict['price']-row_dict['price_6M'])/row_dict['price_6M'])*100
@@ -127,4 +131,4 @@ for i,random_date in enumerate(random_dates):
             # Convert dictionary to DataFrame and append to existing DataFrame
             df_results = pd.concat([df_results, pd.DataFrame([row_dict])], ignore_index=True)
 
-df_results.to_csv('data_to_copy.csv', index=False)
+df_results.to_csv(F'experiment1/raw_data_{GOOD_RETURN*100}_in_{WAITING_IN_WEEKS}W.csv', index=False)

@@ -100,7 +100,7 @@ def get_very_old_price(symbol):
 
 
 def get_historical_price(symbol):
-    url_price = f'https://financialmodelingprep.com/api/v3/historical-chart/1day/{symbol}?from=2018-01-01&to=2024-10-16&apikey={api_key}'
+    url_price = f'https://financialmodelingprep.com/api/v3/historical-chart/1day/{symbol}?from=2018-01-01&to=2024-11-27&apikey={api_key}'
     try:
         response = requests.get(url_price, timeout=2)  # Increased timeout to 2 seconds
         response.raise_for_status()  # Raises an HTTPError for bad responses
@@ -264,7 +264,9 @@ def extract_cashflow_features(input_date,sorted_cashflow_data):
                 "dividendsPaid": entry["dividendsPaid"],
                 "otherFinancingActivites": entry["otherFinancingActivites"],
                 "operatingCashFlow": entry['operatingCashFlow'],
-                "capitalExpenditure": entry['capitalExpenditure']
+                "capitalExpenditure": entry['capitalExpenditure'],
+                "netCashProvidedByOperatingActivities": entry['netCashProvidedByOperatingActivities'],
+                
             }
     return None
 
@@ -420,6 +422,21 @@ def get_estimation_dict(symbol,period):
 
     return sorted_data
 
+def convert_to_dict(historic_data,parse_time=True):
+    if historic_data is None:
+        return None
+    date_to_close = {}
+    for entry in historic_data:
+        try:
+            if parse_time:
+                date_obj = datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S').date()
+            else:
+                date_obj = datetime.strptime(entry['date'], '%Y-%m-%d').date()
+            date_to_close[date_obj] = entry['close']
+        except ValueError as e:
+            print(f"Date format error in entry {entry}: {e}")
+    return date_to_close
+
 def get_cashflow_dict(symbol,period):
     url_income = f'https://financialmodelingprep.com/api/v3/cash-flow-statement/{symbol}?period={period}&apikey={api_key}'
 
@@ -464,18 +481,3 @@ def convert_to_df(date_to_close):
     date_to_close_df.set_index('date', inplace=True)
     date_to_close_df.sort_index(inplace=True)
     return date_to_close_df
-
-def convert_to_dict(historic_data,parse_time=True):
-    if historic_data is None:
-        return None
-    date_to_close = {}
-    for entry in historic_data:
-        try:
-            if parse_time:
-                date_obj = datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S').date()
-            else:
-                date_obj = datetime.strptime(entry['date'], '%Y-%m-%d').date()
-            date_to_close[date_obj] = entry['close']
-        except ValueError as e:
-            print(f"Date format error in entry {entry}: {e}")
-    return date_to_close

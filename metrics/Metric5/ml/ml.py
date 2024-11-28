@@ -49,7 +49,7 @@ recall = tp/(tp+fn)
 !!!!!!!!!!!!!!!!!s!!!!!!!!!!!!!!!!!!!!!
 """
 
-SAVE_MODEL = False
+SAVE_MODEL = True
 df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric5/ml/processed_data.csv')
 df = df.sample(frac=1).reset_index(drop=True)
 df = df.drop(['date', 'symbol'], axis=1)
@@ -68,18 +68,49 @@ feature_subsets = [
        'var_sma100D', 'var_sma50D_100D', 'var_sma10D_100D', '1y_return',
        '1Y_6M_growth']
     ,
+    ['evebitda', 'price', 'sma_50d', 'marketCap', 'EV', 'max_minus_min8M',
+       'markRevRatio', 'peg', 'EVGP', 'fwdPriceTosale',
+       'var_sma100D', 'var_sma50D_100D', 'var_sma10D_100D', '1y_return',
+       '1Y_6M_growth']
+    ,
     ['price', 'evebitda', 'marketCap', 'markRevRatio', 'peg', 'EVRevenues',
        'fwdPriceTosale', 'var_sma50D_100D', 'var_sma10D_100D', '1y_return']
     ,
-    ['evebitda', 'netIncome', 'marketCap', 'curr_est_eps', 'future_est_rev',
-       'debtToPrice', 'markRevRatio', 'PS_to_PEG', 'dividend_payout_ratio',
-       'var_sma10D_50D', 'var_sma50D_100D', 'var_sma10D_100D', 'deriv_4m',
-       'peg_normalized', 'EVGP_normalized', 'combined_valuation_score']
-    ,
-    ['netIncome', 'marketCap', 'curr_est_eps', 'future_est_rev',
-       'debtToPrice', 'PS_to_PEG', 'dividend_payout_ratio', 'var_sma50D_100D',
-       'var_sma10D_100D', 'peg_normalized', 'EVGP_normalized',
+
+    ['RnD_expenses', 'eps_growth', 'deriv_min8M',
+       'sma_100d_to_sma_200d_ratio'],
+
+    ['evebitda', 'RnD_expenses', 'marketCap', 'eps_growth', 'peg',
+       'EVRevenues', 'fwdPriceTosale', 'var_sma10D_100D', 'deriv_2m',
+       'deriv_max4M', 'deriv_min8M', '1Y_6M_growth',
+       'sma_100d_to_sma_200d_ratio', 'combined_valuation_score'],
+    
+    ['evebitda', 'RnD_expenses', 'marketCap', 'eps_growth', 'peg',
+       'fwdPriceTosale', 'var_sma10D_100D', 'deriv_2m', 'deriv_min8M',
+       '1Y_6M_growth', 'sma_100d_to_sma_200d_ratio',
+       'combined_valuation_score']   ,
+    
+    ['RnD_expenses', 'eps_growth', 'peg', 'var_sma10D_100D', 'deriv_min8M',
+       '1Y_6M_growth', 'sma_100d_to_sma_200d_ratio',
+       'combined_valuation_score']  ,
+
+    ['marketCap', 'fwdPriceTosale', 'sma_100d_to_sma_200d_ratio',
        'combined_valuation_score']
+    
+    ,['evebitda', 'sma_50d', 'marketCap', 'markRevRatio', 'EVRevenues',
+       'fwdPriceTosale', 'sma_100d_to_sma_200d_ratio',
+       'combined_valuation_score']
+    
+    ,['evebitda', 'sma_200d', 'sma_50d', 'marketCap', 'markRevRatio',
+       'EVRevenues', 'fwdPriceTosale', 'deriv_2m', '1Y_6M_growth',
+       'sma_100d_to_sma_200d_ratio', 'combined_valuation_score',
+       'sma10_yoy_growth']
+    
+    ,['evebitda', 'sma_200d', 'sma_50d', 'marketCap', 'EV', 'markRevRatio',
+       'peg', 'netDebtToPrice', 'EVGP', 'EVRevenues', 'fwdPriceTosale',
+       'deriv_2m', '4M_return', '1Y_6M_growth', 'sma_50d_to_sma_100d_ratio',
+       'sma_100d_to_sma_200d_ratio', 'combined_valuation_score',
+       'sma10_yoy_growth']
 ]
 
 
@@ -97,11 +128,20 @@ models = {
     'RF5': RandomForestClassifier(n_estimators=200,max_features='sqrt',min_samples_leaf=1,min_samples_split=2),
     'RF6': RandomForestClassifier(n_estimators=300,max_features=None,min_samples_leaf=1,min_samples_split=2),
     'RF7': RandomForestClassifier(n_estimators=200,max_features=None,min_samples_leaf=1,min_samples_split=2),
+    'RF8': RandomForestClassifier(n_estimators=100,max_features= None, min_samples_leaf= 1, min_samples_split= 5,max_depth=10),
+    'RF9': RandomForestClassifier(n_estimators= 100, max_features='log2', min_samples_leaf= 1, min_samples_split= 2,max_depth= None,),
+    'RF10': RandomForestClassifier(n_estimators= 100, max_features='sqrt', min_samples_leaf= 1, min_samples_split= 2,max_depth= 10),
+    'RF11': RandomForestClassifier(n_estimators= 300, max_features='sqrt', min_samples_leaf= 1, min_samples_split= 2,max_depth= 10),
+
     'XGB1':XGBClassifier(n_estimators=100),
     'XGB2':XGBClassifier(n_estimators=200),
     'XGB3':XGBClassifier(n_estimators=200,eval_metric='logloss'),
     'XGB4':XGBClassifier(n_estimators=200,colsample_bytree= 0.7,gamma=0,learning_rate=0.3,max_depth=5,min_child_weight=1,subsample=0.8),
     'XGB5':XGBClassifier(n_estimators=300,colsample_bytree= 0.9,gamma=0.1,learning_rate=0.1,max_depth=7,min_child_weight=1,subsample=0.7),
+    'XGB6':XGBClassifier(n_estimators=300,colsample_bytree= 0.9,gamma=0.2,learning_rate=0.3,max_depth=5,min_child_weight=1,subsample=0.8),
+    'XGB7':XGBClassifier(n_estimators=300,colsample_bytree= 0.8,gamma=0.1,learning_rate=0.1,max_depth=5,min_child_weight=1,subsample=0.9),
+    'XGB8':XGBClassifier(n_estimators=300,colsample_bytree= 0.9,gamma=0,learning_rate=0.3,max_depth=7,min_child_weight=1,subsample=0.7),
+    'XGB9':XGBClassifier(n_estimators=300,colsample_bytree= 0.8,gamma=0,learning_rate=0.1,max_depth=7,min_child_weight=1,subsample=0.7),
     
 
     #'Dummy (Always 0)': DummyClassifier(strategy='constant', constant=0)
@@ -112,7 +152,7 @@ for i, subset in enumerate(feature_subsets):
     print(f"\n========== Feature Subset {i}: {subset} ==========")
     X = df[subset]
     y = df['to_buy']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
     
     good_model_found=False
 
@@ -127,7 +167,7 @@ for i, subset in enumerate(feature_subsets):
         precision = precision_score(y_test, y_pred)
         tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
         specificity = tn / (tn + fp)
-        if precision>0.97 and specificity>0.97:
+        if precision>0.989 and specificity>0.989:
             good_model_found=True
             print("----------------------")
             accuracy = accuracy_score(y_test, y_pred)

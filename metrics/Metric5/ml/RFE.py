@@ -10,18 +10,57 @@ from xgboost import XGBClassifier
 to run : py -m metrics.Metric5.ml.RFE
 """
 """
-best subset of features so far :
+best subset of features so far (for random forest : ) :
+Index(['marketCap', 'fwdPriceTosale', 'sma_100d_to_sma_200d_ratio',
+       'combined_valuation_score'],
+      dtype='object')
+Accuracy: 0.967741935483871
 
+Selected Features:
+Index(['evebitda', 'sma_50d', 'marketCap', 'markRevRatio', 'EVRevenues',
+       'fwdPriceTosale', 'sma_100d_to_sma_200d_ratio',
+       'combined_valuation_score'],
+      dtype='object')
+Accuracy: 0.9741935483870968
+
+Index(['evebitda', 'sma_200d', 'sma_50d', 'marketCap', 'markRevRatio',
+       'EVRevenues', 'fwdPriceTosale', 'deriv_2m', '1Y_6M_growth',
+       'sma_100d_to_sma_200d_ratio', 'combined_valuation_score',
+       'sma10_yoy_growth'],
+      dtype='object')
+Accuracy: 0.9870967741935484
+
+
+Selected Features:
+Index(['evebitda', 'sma_200d', 'sma_50d', 'marketCap', 'EV', 'markRevRatio',
+       'peg', 'netDebtToPrice', 'EVGP', 'EVRevenues', 'fwdPriceTosale',
+       'deriv_2m', '4M_return', '1Y_6M_growth', 'sma_50d_to_sma_100d_ratio',
+       'sma_100d_to_sma_200d_ratio', 'combined_valuation_score',
+       'sma10_yoy_growth'],
+      dtype='object')
+Accuracy: 0.9870967741935484
+
+
+best subset of features so far (for xgboost : ) :
+
+['RnD_expenses', 'eps_growth', 'deriv_min8M',
+       'sma_100d_to_sma_200d_ratio']
+
+['RnD_expenses', 'eps_growth', 'peg', 'var_sma10D_100D', 'deriv_min8M',
+       '1Y_6M_growth', 'sma_100d_to_sma_200d_ratio',
+       'combined_valuation_score']   
+['evebitda', 'RnD_expenses', 'marketCap', 'eps_growth', 'peg',
+       'fwdPriceTosale', 'var_sma10D_100D', 'deriv_2m', 'deriv_min8M',
+       '1Y_6M_growth', 'sma_100d_to_sma_200d_ratio',
+       'combined_valuation_score']   
+['evebitda', 'RnD_expenses', 'marketCap', 'eps_growth', 'peg',
+       'EVRevenues', 'fwdPriceTosale', 'var_sma10D_100D', 'deriv_2m',
+       'deriv_max4M', 'deriv_min8M', '1Y_6M_growth',
+       'sma_100d_to_sma_200d_ratio', 'combined_valuation_score']
 """
 """
 these variables are almost the same (correlation>=0.99): 
--peg - peg_sector_comp
--var_sma50D_100D - sma_50d_to_sma_100d_ratio
--var_sma10D_100D - sma_10d_to_sma_100d_ratio
--1y_return - sma10_yoy_growth
--price - min_in_1M  
--price - max_in_2W- sma_10d
--var_sma100D price_to_sma_100d_ratio
+
 """
 MODEL_SELECTED = 'XGBOOST' #'RF' or 'XGBOOST'
 
@@ -31,7 +70,7 @@ df = df.sample(frac=1).reset_index(drop=True)
 
 df = pd.get_dummies(df, columns=['sector'])
 
-X = df.drop(columns=['to_buy', 'date', 'symbol','price' ,'max_in_2W', 'peg_sector_comp','sma_50d_to_sma_100d_ratio','sma_10d_to_sma_100d_ratio','sma10_yoy_growth','price_to_sma_100d_ratio'], errors='ignore')
+X = df.drop(columns=['to_buy', 'date', 'symbol'], errors='ignore')
 y = df['to_buy']
 
 # Split the data into training and testing sets

@@ -76,11 +76,6 @@ def fetch_data_for_ml(stocks):
 
     return sma_10d_dict,sma_50w_dict,sma_100d_dict ,sma_200d_dict ,income_dict ,market_cap_dict
 
-def load_stocks(nbr,path='sp500_final.csv'):
-    stocks_df = pd.read_csv(path)
-    stocks = stocks_df['Ticker'].tolist()
-    stocks = random.sample(stocks, nbr)
-    return stocks
 
 def fetch_stock_data(stocks):
     historical_data_for_stock = {}
@@ -101,40 +96,6 @@ def fetch_stock_data(stocks):
 
     return historical_data_for_stock, hist_data_df_for_stock,eps_date_dict,income_dict
 
-def convert_to_dict(historic_data):
-    if historic_data is None:
-        return None
-    date_to_close = {}
-    for entry in historic_data:
-        try:
-            date_obj = datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S').date()
-            date_to_close[date_obj] = entry['close']
-        except ValueError as e:
-            print(f"Date format error in entry {entry}: {e}")
-    return date_to_close
-
-def get_historical_price(symbol):
-    url_price = f'https://financialmodelingprep.com/api/v3/historical-chart/1day/{symbol}?from=2018-01-01&to=2024-10-01&apikey={api_key}'
-    try:
-        response = requests.get(url_price, timeout=2)  # Increased timeout to 2 seconds
-        response.raise_for_status()  # Raises an HTTPError for bad responses
-    except Timeout:
-        print(f"Request timed out for symbol {symbol}")
-        return None
-    except ConnectionError:
-        print(f"Connection error occurred for symbol {symbol}")
-        return None
-    except RequestException as e:
-        print(f"An error occurred while fetching data for symbol {symbol}: {str(e)}")
-        return None
-
-    try:
-        data_price = response.json()
-    except json.JSONDecodeError:
-        print(f"Failed to decode JSON for symbol {symbol}. Response content: {response.text[:200]}...")
-        return None
-
-    return data_price
 
 def is_quarterly_spaced(data: List[Dict], target_date: Union[str, datetime]) -> bool:
     def ensure_datetime(date_value):
@@ -547,14 +508,6 @@ def generate_valid_random_date():
         
         return random_date
     
-def convert_to_df(date_to_close):
-    if date_to_close is None:
-       return None
-    date_to_close_df = pd.DataFrame(date_to_close.items(), columns=['date', 'close'])
-    date_to_close_df['date'] = pd.to_datetime(date_to_close_df['date'])
-    date_to_close_df.set_index('date', inplace=True)
-    date_to_close_df.sort_index(inplace=True)
-    return date_to_close_df
 
 def get_income_statements(symbol,period):
     url_income = f'https://financialmodelingprep.com/api/v3/income-statement/{symbol}?period={period}&apikey={api_key}'
@@ -729,39 +682,6 @@ def extract_other_expenses(date,sorted_data_income):
             return entry['otherExpenses']
     return None
 
-def get_historical_market_cap(date,stock,sorted_data=None):
-    if date != 'all':
-        if isinstance(date, str):
-            date = datetime.strptime(date, '%Y-%m-%d').date()
-        elif isinstance(date, pd.Timestamp):
-            date = date.date()
-        elif isinstance(date, datetime):
-            date = date.date()
-    if sorted_data==None:
-        url_market_cap = f'https://financialmodelingprep.com/api/v3/historical-market-capitalization/{stock}?from=2018-10-10&to=2024-10-20&apikey={api_key}'
-
-        try:
-            response_sma = requests.get(url_market_cap, timeout=1)
-        except requests.exceptions.Timeout:
-            print("Request timed out")
-            return None
-
-        if response_sma.status_code != 200:
-            print(f"Error: API returned status code {response_sma.status_code}")
-            return None
-        data_sma = response_sma.json()
-        sorted_data = sorted(data_sma, key=lambda x: datetime.strptime(x['date'].split()[0], "%Y-%m-%d"), reverse=True)
-    if date=='all':
-        return sorted_data
-    min_date = date - timedelta(days=5)
-
-    for entry in sorted_data:
-        entry_date = datetime.strptime(entry['date'].split()[0], "%Y-%m-%d").date()
-        if min_date<=entry_date <= date:
-            return entry['marketCap']
-    
-    return None
-
 def get_SMA(symbol, date, period,length,sorted_data=None,use_api_call=False):
     if date != 'all':
         if isinstance(date, str):
@@ -843,17 +763,6 @@ def get_stock_price_at_date(symbol, date,historical_data =None,not_None=False):
                 return entry['close']
     return None
 
-def get_current_price(symbol):
-    url = f'https://financialmodelingprep.com/api/v3/quote/{symbol}?apikey={api_key}'
-    try:
-      response_key_metrics = requests.get(url, timeout=2)
-    except Timeout:
-      print("Request timed out")
-      return None
-    data_price = response_key_metrics.json()
-    current_price = data_price[0].get('price')
-    return current_price
-
 def calculate_current_quarter_peg(symbol,current_price):
     today_date = pd.Timestamp.today()
     url_key_metrics = f'https://financialmodelingprep.com/api/v3/key-metrics/{symbol}?period=quarter&limit=4&apikey={api_key}'
@@ -873,19 +782,3 @@ def calculate_current_quarter_peg(symbol,current_price):
     else:
        peg = (current_price/ current_quarter_eps) / (Earnings_growth_rate*100)
        return peg
-
-def get_current_market_cap(stock):
-  url = f'https://financialmodelingprep.com/api/v3/market-capitalization/{stock}?apikey={api_key}'
-  try:
-      response_sma = requests.get(url, timeout=2)
-  except requests.exceptions.Timeout:
-      print("Request timed out")
-      return None
-  if response_sma.status_code != 200:
-      print(f"Error: API returned status code {response_sma.status_code}")
-      return None
-  data = response_sma.json()
-  if len(data)>0:
-    return data[0]['marketCap']
-  else:
-    return None

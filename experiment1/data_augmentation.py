@@ -24,9 +24,9 @@ import random
 
 AUGMENTATION_LVL =0 #0 then 1
  #to balance the datast before saving it (only put true at the last augmentation level)
-FEATURES_TO_ADD = 1300 
+FEATURES_TO_ADD = 500 
 
-BALANCE_DATASET = True
+BALANCE_DATASET = False
 
 def get_mult_magnitude(df, feature1, feature2):
     avg1 = abs(df[feature1]).mean()
@@ -160,7 +160,7 @@ def generate_new_features(df, feature_columns,n_new_features):
     return result_df,new_features_expl
 
 if AUGMENTATION_LVL ==0:
-    df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/cleaned_data.csv')
+    df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/cleaned_data_15_in_3M.csv')
 else:
     df = pd.read_csv(f'C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/cleaned_data_augmented_{AUGMENTATION_LVL-1}.csv')
 exclude_columns = ['target', 'stock', 'date']

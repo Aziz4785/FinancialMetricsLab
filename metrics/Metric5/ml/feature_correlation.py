@@ -8,21 +8,12 @@ to run : py -m metrics.Metric5.ml.feature_correlation
 """
 
 
-feature_importance = ['price', 'evebitda', 'sma_50d', 'marketCap', 'EV', 'min_in_1M',
-       'max_in_2W', 'debtToPrice', 'markRevRatio', 'pe', 'peg', 'EVGP',
-       'EVRevenues', 'fwdPriceTosale', 'fwdPriceTosale_diff', 'var_sma100D',
-       'var_sma50D_100D', 'var_sma10D_100D', 'deriv_1m', 'deriv_2m',
-       '4M_return', '1y_return', '2M_1W_growth', '1Y_6M_growth',
-       'price_to_sma_100d_ratio', 'peg_sector_relative',
-       'markRevRatio_sector_relative', 'deriv_4m_sector_relative']
+feature_importance = ['evebitda', 'RnD_expenses', 'GP', 'marketCap', 'Spread4Mby8M',
+       'debtToPrice', 'markRevRatio', 'eps_growth', 'peg', 'EVRevenues',
+       'fwdPriceTosale', 'var_sma10D_100D', 'deriv_2m', 'deriv_max4M',
+       'deriv_min8M', '1Y_6M_growth', 'sma_100d_to_sma_200d_ratio',
+       'combined_valuation_score']
 
-feature_importance =['var_sma50D_100D', 'future_est_rev',
-       '1y_return', 'debtToPrice', '1Y_6M_growth', 'EVGP',
-        'marketCap', 'var_sma10D_50D', 'var_sma100D',
-       'max_minus_min8M', 'curr_est_eps', 'fwdPriceTosale',
-       'combined_valuation_score', 'markRevRatio',
-        'deriv_4m', 'sma_10d',
-       'evebitda', 'EV', 'dividend_payout_ratio', 'peg', 'netIncome']
 
 df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric5/ml/processed_data.csv')
 
@@ -34,7 +25,7 @@ print(X.columns)
 correlation_matrix = X.corr().abs()
 
 # Find highly correlated features
-threshold = 0.85
+threshold = 0.99
 high_corr_features = np.where(correlation_matrix > threshold)
 high_corr_features = [(correlation_matrix.index[x], correlation_matrix.columns[y], correlation_matrix.iloc[x, y])
                       for x, y in zip(*high_corr_features) if x != y and x < y]

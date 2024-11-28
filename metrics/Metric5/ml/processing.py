@@ -12,12 +12,6 @@ to run : to run : py -m metrics.Metric5.ml.processing
 if there is a lot of None values at the end, re-run this script because sometimes the problem comes from the API
 """
 
-
-
-# Safe division function
-def safe_divide(a, b):
-    return round(a / b, 2) if b != 0 else None
-
 df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric5/ml/cleaned_training_data.csv', parse_dates=['date'])
 #df = df.sample(frac=0.02)
 
@@ -27,8 +21,8 @@ if (len(stocks) <3):
     print("too few stocks ... cannot perform analysis on it")
     exit()
 
-historical_data_for_stock, _, income_dict, hist_data_df_for_stock,_,cashflow_dict,estimations_dict,sector_dict = fetch_stock_data(stocks)
-sma_10d_dict,sma_50w_dict,sma_100d_dict,sma_200d_dict,sma_50d_dict,market_cap_dict,balance_dict,std_10d_dict = fetch_data_for_ml(stocks)
+historical_data_for_stock, market_cap_dict, income_dict, hist_data_df_for_stock,balance_dict,cashflow_dict,estimations_dict,sector_dict = fetch_stock_data(stocks)
+sma_10d_dict,sma_50w_dict,sma_100d_dict,sma_200d_dict,sma_50d_dict,_,_,std_10d_dict = fetch_data_for_ml(stocks)
 
 df['sma_10d'] = df.apply(lambda row: extract_SMA(row['date'],sma_10d_dict[row['symbol']]), axis=1)
 print("SMA 10D done !")
@@ -104,11 +98,7 @@ df['ebitda'], df['income_lag_days'] = zip(*[
 
 #df['future_est_eps'] = df.apply(lambda row: extract_EST_EPS(row['date'], income_dict[row['symbol']]), axis=1)
 df['marketCap'] = df.apply(lambda row: extract_market_cap(row['date'], market_cap_dict[row['symbol']]), axis=1)
-#df['total_debt']=df.apply(lambda row: extract_total_debt(row['date'], balance_dict[row['symbol']]), axis=1)
-# df['total_debt'], df['balance_lag_days'] = zip(*df.apply(
-#     lambda row: extract_total_debt(row['date'], balance_dict[row['symbol']]), 
-#     axis=1
-# ))
+
 results2 = df.apply(
     lambda row: extract_total_debt(row['date'], balance_dict[row['symbol']]), 
     axis=1
@@ -354,12 +344,12 @@ df['var_sma50D_200D'] = df.apply(lambda row:
 
 df['var_sma10D_100D'] = df.apply(lambda row: 
     None if row['sma_100d'] is None or row['sma_100d'] == 0 
-    else (row['sma_10d'] - row['sma_100d'])/row['sma_100d'], 
+    else safe_subtract(row['sma_10d'], row['sma_100d'])/row['sma_100d'], 
     axis=1)
 
 df['var_sma10D_200D'] = df.apply(lambda row: 
     None if row['sma_200d'] is None or row['sma_200d'] == 0 
-    else (row['sma_10d'] - row['sma_200d'])/row['sma_200d'], 
+    else safe_subtract(row['sma_10d'] ,row['sma_200d'])/row['sma_200d'], 
     axis=1)
 
 
@@ -387,50 +377,50 @@ df['deriv_3m'] = df.apply(lambda row:
     axis=1)
 
 df['deriv_4m'] = df.apply(lambda row: 
-    (row['price'] - row['sma_10d_4months_ago'])/4, 
+    safe_subtract(row['price'], row['sma_10d_4months_ago'])/4, 
     axis=1)
 
 df['deriv_5m'] = df.apply(lambda row: 
-    (row['price'] - row['sma_10d_5months_ago'])/5, 
+    safe_subtract(row['price'],row['sma_10d_5months_ago'])/5, 
     axis=1)
 
 df['deriv_6m'] = df.apply(lambda row: 
-    (row['price'] - row['sma_10d_6months_ago'])/6, 
+    safe_subtract(row['price'], row['sma_10d_6months_ago'])/6, 
     axis=1)
 
 df['deriv_max4M'] = df.apply(lambda row: None if row['max4M_lag']is None or row['max4M_lag']==0 else
-    (row['price'] - row['max_in_4M'])/row['max4M_lag'], 
+    safe_subtract(row['price'] ,row['max_in_4M'])/row['max4M_lag'], 
     axis=1)
 df['deriv_min4M'] = df.apply(lambda row: None if row['min4M_lag']is None or row['min4M_lag']==0 else
-    (row['price'] - row['min_in_4M'])/row['min4M_lag'], 
+    safe_subtract(row['price'] , row['min_in_4M'])/row['min4M_lag'], 
     axis=1)
 
 df['deriv_max8M'] = df.apply(lambda row: None if row['max8M_lag']is None or row['max8M_lag']==0 else
-    (row['price'] - row['max_in_8M'])/row['max8M_lag'], 
+    safe_subtract(row['price'] ,row['max_in_8M'])/row['max8M_lag'], 
     axis=1)
 
 df['deriv_min8M'] = df.apply(lambda row: None if row['min8M_lag'] is None or row['min8M_lag']==0 else
-    (row['price'] - row['min_in_8M'])/row['min8M_lag'], 
+    safe_subtract(row['price'],row['min_in_8M'])/row['min8M_lag'], 
     axis=1)
 
 df['deriv_1w1m_growth'] = df.apply(lambda row: 
     None if row['deriv_1m'] is None or row['deriv_1m'] == 0 
-    else (row['deriv_1w'] - row['deriv_1m'])/row['deriv_1m'], 
+    else safe_subtract(row['deriv_1w'] , row['deriv_1m'])/row['deriv_1m'], 
     axis=1)
 
 df['deriv_1m2m_growth'] = df.apply(lambda row: 
     None if row['deriv_2m'] is None or row['deriv_2m'] == 0 
-    else (row['deriv_1m'] - row['deriv_2m'])/row['deriv_2m'], 
+    else safe_subtract(row['deriv_1m'],row['deriv_2m'])/row['deriv_2m'], 
     axis=1)
 
 df['deriv_3m4m_growth'] = df.apply(lambda row: 
     None if row['deriv_4m'] is None or row['deriv_4m'] == 0 
-    else (row['deriv_3m'] - row['deriv_4m'])/row['deriv_4m'], 
+    else safe_subtract(row['deriv_3m'],row['deriv_4m'])/row['deriv_4m'], 
     axis=1)
 
 df['1W_return'] = df.apply(lambda row: 
     None if row['sma_10d_1weeks_ago'] is None or row['sma_10d_1weeks_ago'] == 0 
-    else (row['price'] - row['sma_10d_1weeks_ago'])/row['sma_10d_1weeks_ago'], 
+    else safe_subtract(row['price'],row['sma_10d_1weeks_ago'])/row['sma_10d_1weeks_ago'], 
     axis=1)
 
 df['price_to_SMA10d_1W'] = df.apply(lambda row: 
@@ -445,78 +435,78 @@ df['price_to_SMA10d_5M'] = df.apply(lambda row:
 
 df['1M_return'] = df.apply(lambda row: 
     None if row['sma_10d_1months_ago'] is None or row['sma_10d_1months_ago'] == 0 
-    else (row['price'] - row['sma_10d_1months_ago'])/row['sma_10d_1months_ago'], 
+    else safe_subtract(row['price'],row['sma_10d_1months_ago'])/row['sma_10d_1months_ago'], 
     axis=1)
 
 df['2M_return'] = df.apply(lambda row: 
     None if row['sma_10d_2months_ago'] is None or row['sma_10d_2months_ago'] == 0 
-    else (row['price'] - row['sma_10d_2months_ago'])/row['sma_10d_2months_ago'], 
+    else safe_subtract(row['price'],row['sma_10d_2months_ago'])/row['sma_10d_2months_ago'], 
     axis=1)
 
 df['3M_return'] = df.apply(lambda row: 
     None if row['sma_10d_3months_ago'] is None or row['sma_10d_3months_ago'] == 0 
-    else (row['price'] - row['sma_10d_3months_ago'])/row['sma_10d_3months_ago'], 
+    else safe_subtract(row['price'],row['sma_10d_3months_ago'])/row['sma_10d_3months_ago'], 
     axis=1)
 
 df['4M_return'] = df.apply(lambda row: 
     None if row['sma_10d_4months_ago'] is None or row['sma_10d_4months_ago'] == 0 
-    else (row['price'] - row['sma_10d_4months_ago'])/row['sma_10d_4months_ago'], 
+    else safe_subtract(row['price'],row['sma_10d_4months_ago'])/row['sma_10d_4months_ago'], 
     axis=1)
 
 df['5M_return'] = df.apply(lambda row: 
     None if row['sma_10d_5months_ago'] is None or row['sma_10d_5months_ago'] == 0 
-    else (row['price'] - row['sma_10d_5months_ago'])/row['sma_10d_5months_ago'], 
+    else safe_subtract(row['price'],row['sma_10d_5months_ago'])/row['sma_10d_5months_ago'], 
     axis=1)
 
 df['6M_return'] = df.apply(lambda row: 
     None if row['sma_10d_6months_ago'] is None or row['sma_10d_6months_ago'] == 0 
-    else (row['price'] - row['sma_10d_6months_ago'])/row['sma_10d_6months_ago'], 
+    else safe_subtract(row['price'],row['sma_10d_6months_ago'])/row['sma_10d_6months_ago'], 
     axis=1)
 
 df['7M_return'] = df.apply(lambda row: 
     None if row['sma_10d_7months_ago'] is None or row['sma_10d_7months_ago'] == 0 
-    else (row['price'] - row['sma_10d_7months_ago'])/row['sma_10d_7months_ago'], 
+    else safe_subtract(row['price'],row['sma_10d_7months_ago'])/row['sma_10d_7months_ago'], 
     axis=1)
 
 df['1y_return'] = df.apply(lambda row: 
     None if row['sma_10d_11months_ago'] is None or row['sma_10d_11months_ago'] == 0 
-    else (row['price'] - row['sma_10d_11months_ago'])/row['sma_10d_11months_ago'], 
+    else safe_subtract(row['price'],row['sma_10d_11months_ago'])/row['sma_10d_11months_ago'], 
     axis=1)
 print("-------------------")
 
 df['1M_1W_growth']= df.apply(lambda row: 
     None if row['sma_10d_1months_ago'] is None or row['sma_10d_1months_ago'] == 0 
-    else (row['sma_10d_1weeks_ago'] - row['sma_10d_1months_ago'])/row['sma_10d_1months_ago'], 
+    else safe_subtract(row['sma_10d_1weeks_ago'],row['sma_10d_1months_ago'])/row['sma_10d_1months_ago'], 
     axis=1)
 
 df['2M_1W_growth']= df.apply(lambda row: 
     None if row['sma_10d_2months_ago'] is None or row['sma_10d_2months_ago'] == 0 
-    else (row['sma_10d_1weeks_ago'] - row['sma_10d_2months_ago'])/row['sma_10d_2months_ago'], 
+    else safe_subtract(row['sma_10d_1weeks_ago'],row['sma_10d_2months_ago'])/row['sma_10d_2months_ago'], 
     axis=1)
 
 df['1M1W_2M1W_growth']= df.apply(lambda row: 
     None if row['2M_1W_growth'] is None or row['2M_1W_growth'] == 0 
-    else (row['1M_1W_growth'] - row['2M_1W_growth'])/row['2M_1W_growth'], 
+    else safe_subtract(row['1M_1W_growth'],row['2M_1W_growth'])/row['2M_1W_growth'], 
     axis=1)
 
 df['2M_1M_growth']= df.apply(lambda row: 
     None if row['sma_10d_2months_ago'] is None or row['sma_10d_2months_ago'] == 0 
-    else (row['sma_10d_1months_ago'] - row['sma_10d_2months_ago'])/row['sma_10d_2months_ago'], 
+    else safe_subtract(row['sma_10d_1months_ago'], row['sma_10d_2months_ago'])/row['sma_10d_2months_ago'], 
     axis=1)
 
 df['3M_2M_growth']= df.apply(lambda row: 
     None if row['sma_10d_3months_ago'] is None or row['sma_10d_3months_ago'] == 0 
-    else (row['sma_10d_2months_ago'] - row['sma_10d_3months_ago'])/row['sma_10d_3months_ago'], 
+    else safe_subtract(row['sma_10d_2months_ago'], row['sma_10d_3months_ago'])/row['sma_10d_3months_ago'], 
     axis=1)
 
 df['4M_3M_growth']= df.apply(lambda row: 
     None if row['sma_10d_4months_ago'] is None or row['sma_10d_4months_ago'] == 0 
-    else (row['sma_10d_3months_ago'] - row['sma_10d_4months_ago'])/row['sma_10d_4months_ago'], 
+    else safe_subtract(row['sma_10d_3months_ago'], row['sma_10d_4months_ago'])/row['sma_10d_4months_ago'], 
     axis=1)
 
 df['1Y_6M_growth']= df.apply(lambda row: 
     None if row['sma_10d_11months_ago'] is None or row['sma_10d_11months_ago'] == 0 
-    else (row['sma_10d_6months_ago'] - row['sma_10d_11months_ago'])/row['sma_10d_11months_ago'], 
+    else safe_subtract(row['sma_10d_6months_ago'],row['sma_10d_11months_ago'])/row['sma_10d_11months_ago'], 
     axis=1)
 
 
@@ -577,7 +567,7 @@ total_rows = len(df)
 
 # drop columns with a lot of nulls
 null_percentages = (df.isnull().sum() / total_rows) * 100
-columns_to_drop = null_percentages[null_percentages > 9].index
+columns_to_drop = null_percentages[null_percentages > 10].index
 df = df.drop(columns=columns_to_drop)
 print(f"Columns dropped: {list(columns_to_drop)}")
 
@@ -590,20 +580,20 @@ df = df.dropna()
 print("length of df after   engineer_stock_features: ",len(df))
 if '3M_return' in df.columns and '3M_return_sector_relative' in df.columns:
     df['3Mreturn_sector_comp']= df.apply(lambda row: 
-        row['3M_return']-row['3M_return_sector_relative'], 
+        safe_subtract(row['3M_return'],row['3M_return_sector_relative']), 
         axis=1)
 if '6M_return' in df.columns and '6M_return_sector_relative' in df.columns:
     df['6Mreturn_sector_comp']= df.apply(lambda row: 
-        row['6M_return']-row['6M_return_sector_relative'], 
+        safe_subtract(row['6M_return'],row['6M_return_sector_relative']), 
         axis=1)
     
 if '2M_return' in df.columns and '2M_return_sector_relative' in df.columns:
     df['2Mreturn_sector_comp']= df.apply(lambda row: 
-        row['2M_return']-row['2M_return_sector_relative'], 
+        safe_subtract(row['2M_return'],row['2M_return_sector_relative']), 
         axis=1)
 if 'peg' in df.columns and 'peg_sector_relative' in df.columns:
     df['peg_sector_comp']= df.apply(lambda row: 
-        row['peg']-row['peg_sector_relative'], 
+        safe_subtract(row['peg'],row['peg_sector_relative']), 
         axis=1)
 df = df.dropna()
 print("length of df s: ",len(df))
@@ -616,9 +606,12 @@ count_0 = (df['to_buy'] == 0).sum()
 count_1 = (df['to_buy'] == 1).sum()
 print(f" count 0 : {count_0}")
 print(f" count 1 : {count_1}")
-rows_to_remove = count_1 - count_0
+rows_to_remove = abs(count_1 - count_0)
 if rows_to_remove > 0:
-    indices_to_remove = df[df['to_buy'] == 1].index
+    if count_1>count_0:
+        indices_to_remove = df[df['to_buy'] == 1].index
+    else :
+        indices_to_remove = df[df['to_buy'] == 0].index
     indices_to_remove = random.sample(list(indices_to_remove), rows_to_remove)
     df = df.drop(indices_to_remove)
 

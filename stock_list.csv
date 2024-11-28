@@ -65,6 +65,71 @@ BR,Broadridge Financial Solutions,broadridge-financial-solutions
 BSX,Boston Scientific,boston-scientific
 BWA,BorgWarner,borgwarner
 BXP,BXP,bxp
+LRCX,Lam Research,lam-research
+NXPI,NXP Semiconductors N.V,nxp-semiconductors
+MBLY,Mobileye Global,mobileye-global
+CRWD,CrowdStrike Holdings,crowdstrike-holdings
+SNPS,Synopsys,synopsys
+CDNS,Cadence Design Systems,cadence-design-systems
+MCHP,Microchip Technology Incorporated,microchip-technology
+FTNT,Fortinet,fortinet
+ADSK,Autodesk,autodesk
+MNST,Monster Beverage,monster-beverage
+DELL,Dell Technologies,dell
+ERIE,Erie Indemnity Company,erie-indemnity
+KKR,KKR & Co,kkr-&-co
+GDDY,GoDaddy,godaddy
+VST,Vistra Corp,vistra-corp
+GEV,GE Vernova,ge-vernova
+CCJ,Cameco,cameco
+PLTR,Palantir Technologies,palantir-technologies
+VICI,,
+TMDX,,
+RKLB,,
+TTD,,
+SNOW,,
+MDB,,
+ZS,,
+CFLT,,
+DT,,
+WDAY,,
+S,,
+MNDY,,
+GTLB,,
+TEAM,,
+ESTC,,
+BRZE,,
+IONQ,,
+APP,,
+COIN,,
+HIMS,,
+ALAB,,
+FOUR,,
+FSLR,,
+MELI,,
+GLBE,,
+ZETA,,
+CLBT,,
+CVLT,,
+LIF,,
+DOCN,,
+DOCU,,
+NET,,
+U,,
+HUBS,,
+FSLY,,
+ASTS,,
+HOOD,,
+MSTR,,
+CORZ,,
+MGNI,,
+CPNG,,
+SE,,
+NNE,,
+ELV,,
+NU,,
+CELH,,
+OKLO,,
 C,Citigroup,citigroup
 CAG,Conagra Brands,conagra-brands
 CAH,Cardinal Health,cardinal-health
@@ -113,6 +178,7 @@ CVS,CVS Health,cvs-health
 CVX,Chevron,chevron
 D,Dominion Energy,dominion-energy
 DAL,Delta Air Lines,delta-air-lines
+DDOG,,
 DD,DuPont de Nemours,dupont-de-nemours
 DE,Deere & Company,deere-&
 DFS,Discover Financial Services,discover-financial-services
@@ -460,54 +526,3 @@ ZTS,Zoetis,zoetis
 META,Meta Platforms,meta-platforms
 LLY,Eli Lilly and Company,eli-lilly-and
 PANW,Palo Alto Networks,palo-alto-networks
-LRCX,Lam Research,lam-research
-NXPI,NXP Semiconductors N.V,nxp-semiconductors
-MBLY,Mobileye Global,mobileye-global
-CRWD,CrowdStrike Holdings,crowdstrike-holdings
-SNPS,Synopsys,synopsys
-CDNS,Cadence Design Systems,cadence-design-systems
-MCHP,Microchip Technology Incorporated,microchip-technology
-FTNT,Fortinet,fortinet
-ADSK,Autodesk,autodesk
-MNST,Monster Beverage,monster-beverage
-DELL,Dell Technologies,dell
-ERIE,Erie Indemnity Company,erie-indemnity
-KKR,KKR & Co,kkr-&-co
-GDDY,GoDaddy,godaddy
-VST,Vistra Corp,vistra-corp
-GEV,GE Vernova,ge-vernova
-CCJ,Cameco,cameco
-PLTR,Palantir Technologies,palantir-technologies
-VICI,,
-TMDX,,
-RKLB,,
-TTD,,
-SNOW,,
-MDB,,
-ZS,,
-CFLT,,
-DT,,
-WDAY,,
-S,,
-MNDY,,
-GTLB,,
-TEAM,,
-ESTC,,
-BRZE,,
-IONQ,,
-APP,,
-COIN,,
-HIMS,,
-ALAB,,
-FOUR,,
-FSLR,,
-MELI,,
-GLBE,,
-ZETA,,
-CLBT,,
-CVLT,,
-LIF,,
-DOCU,,
-NET,,
-HUBS,,
-FSLY,,

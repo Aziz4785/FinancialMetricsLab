@@ -5,7 +5,7 @@ import random
 """
 to run : py -m experiment1.cleaning
 """
-training_data_path = 'C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/raw_data_10_in_2M.csv'
+training_data_path = 'C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/raw_data_9_in_8W.csv'
 # Read the CSV file
 df = pd.read_csv(training_data_path)
 
@@ -36,16 +36,19 @@ count_0 = (df['target'] == 0).sum()
 count_1 = (df['target'] == 1).sum()
 print(f" count 0 : {count_0}")
 print(f" count 1 : {count_1}")
-rows_to_remove = count_1 - count_0
+rows_to_remove = abs(count_1 - count_0)
 if rows_to_remove > 0:
-    indices_to_remove = df[df['target'] == 1].index
+    if count_1>count_0:
+        indices_to_remove = df[df['target'] == 1].index
+    else :
+        indices_to_remove = df[df['target'] == 0].index
     indices_to_remove = random.sample(list(indices_to_remove), rows_to_remove)
     df = df.drop(indices_to_remove)
 
 # Save the processed data to a new CSV file
-df.to_csv('cleaned_data_10_in_2M.csv', index=False)
+df.to_csv('experiment1/cleaned_data_9_in_8W.csv', index=False)
 
 print(f"Original shape: {pd.read_csv(training_data_path).shape}")
-print(f"Processed shape: {df.shape}")
+print(f"Processed shape (before saving): {df.shape}")
 print(f"Number of rows with to_buy = 0: {(df['target'] == 0).sum()}")
 print(f"Number of rows with to_buy = 1: {(df['target'] == 1).sum()}")

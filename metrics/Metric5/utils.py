@@ -16,17 +16,12 @@ from dotenv import load_dotenv
 import os
 from requests.exceptions import Timeout ,ConnectionError,RequestException
 import pickle
-
+from ..common import * 
 load_dotenv()
 
 # Access the API key
 api_key = os.getenv('FMP_API_KEY')
 
-def load_stocks(nbr,path='sp500_final.csv'):
-    stocks_df = pd.read_csv(path)
-    stocks = stocks_df['Ticker'].tolist()
-    stocks = random.sample(stocks, nbr)
-    return stocks
 
 def fetch_stock_data(stocks):
     print("fetch_stock_data...")
@@ -39,12 +34,11 @@ def fetch_stock_data(stocks):
     estimations_dict = {}
     sector_dict = {}
     for c, stock in enumerate(stocks):
-        print(c)
         historic_data = get_historical_price(stock)
         date_to_close = convert_to_dict(historic_data)
         hist_data_df_for_stock[stock] = convert_to_df(date_to_close)
         historical_data_for_stock[stock] = date_to_close
-        sector_dict[stock]=get_company_sector(stock)
+        #sector_dict[stock]=get_company_sector(stock)
         market_cap_dict[stock] = get_historical_market_cap(stock)
         revenues_dict[stock] = get_income_dict(stock,'quarter')
         balance_shit_dict[stock] = get_balance_shit(stock,'quarter')
@@ -53,6 +47,7 @@ def fetch_stock_data(stocks):
         if estimations_dict[stock] is None:
             print("estimations dict is none for : ",stock)
         if c % 40==0 and c > 0:
+            print(c)
             print("we sleep")
             time.sleep(50)
 
@@ -106,20 +101,11 @@ def engineer_stock_features(df):
     
     # 3. Valuation Ratios Combinations
     valuation_metrics = ['pe', 'peg', 'EVEbitdaRatio', 'EVGP', 'markRevRAtio']
-    
-    # Normalize valuation metrics (handling potential missing values)
-    for metric in valuation_metrics:
-        if metric in df_new.columns:
-            df_new[f'{metric}_normalized'] = (
-                df_new[metric]
-                .pipe(lambda x: (x - x.mean()) / x.std())
-            )
-    
-    # Combined valuation score (equal weights)
-    normalized_columns = [col for col in df_new.columns if col.endswith('_normalized')]
-    if normalized_columns:
-        df_new['combined_valuation_score'] = df_new[normalized_columns].mean(axis=1)
-    
+    available_metrics = [metric for metric in valuation_metrics if metric in df_new.columns]
+
+    if available_metrics:
+        df_new['combined_valuation_score'] = df_new[available_metrics].mean(axis=1)
+
     # 4. Size and Value Combinations
     # Market cap quintile (1 = smallest, 5 = largest)
     if 'marketCap' in df_new:
@@ -127,10 +113,6 @@ def engineer_stock_features(df):
     
     # Value score combining different metrics (handling missing values)
     value_metrics = []
-    if 'pe_normalized' in df_new.columns:
-        value_metrics.append('pe_normalized')
-    if 'PriceToSales_normalized' in df_new.columns:
-        value_metrics.append('PriceToSales_normalized')
     
     if value_metrics:
         df_new['value_score'] = df_new[value_metrics].mean(axis=1)
@@ -149,16 +131,21 @@ def engineer_stock_features(df):
     # 7. Complex Ratios
     # Enterprise value ratios combinations
     ev_metrics = []
-    if 'EVEbitdaRatio_normalized' in df_new.columns:
-        ev_metrics.append('EVEbitdaRatio_normalized')
-    if 'EVGP_normalized' in df_new.columns:
-        ev_metrics.append('EVGP_normalized')
     
     if ev_metrics:
         df_new['ev_composite'] = df_new[ev_metrics].mean(axis=1)
 
     
     return df_new
+
+
+def load_models():
+    with open('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric5/models/XGB7_11_12.pkl', 'rb') as model_file:
+        model = pickle.load(model_file)
+    with open('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric5/models/scaler_11_12.pkl', 'rb') as scaler_file:
+        scaler = pickle.load(scaler_file)
+
+    return model,scaler
 
 def fetch_data_for_ml(stocks):
     sma_10d_dict = {}
@@ -175,9 +162,9 @@ def fetch_data_for_ml(stocks):
         sma_100d_dict[stock]=get_SMA(stock, '1day', 100)
         sma_200d_dict[stock]=get_SMA(stock, '1day', 200)
         sma_50d_dict[stock]=get_SMA(stock, '1day', 50)
-        market_cap_dict[stock] = get_historical_market_cap(stock)
-        balance_dict[stock] = get_balance_shit(stock,'quarter')
-        std_10d_dict[stock] = get_std(stock,'1day',10)
+        #market_cap_dict[stock] = get_historical_market_cap(stock)
+        #balance_dict[stock] = get_balance_shit(stock,'quarter')
+        #std_10d_dict[stock] = get_std(stock,'1day',10)
         if i%20==0:
             print(f"i = {i} we sleep")
             time.sleep(20)
@@ -252,23 +239,97 @@ def add_historical_sma(df: pd.DataFrame, sma_10d_dict: Dict) -> pd.DataFrame:
     
     return df
 
-def extract_SMA(date,sorted_data):
-    if sorted_data is None:
-        return None 
-    if isinstance(date, str):
-        date = datetime.strptime(date, '%Y-%m-%d').date()
-    elif isinstance(date, pd.Timestamp):
-        date = date.date()
-    elif isinstance(date, datetime):
-        date = date.date()
 
-    if sorted_data is not None:
-        for entry in sorted_data:
-            entry_date = datetime.strptime(entry['date'].split()[0], "%Y-%m-%d").date()
-            if entry_date <= date:
-                return round(entry['sma'],2)
+def predict_buy(model,scaler,features_for_pred,input_date,symbol,ev_ebitda,price_at_date,
+                                                                  sma_10d_dict,sma_50w_dict,sma_100d_dict ,sma_200d_dict ,sma_50d_dict,
+                                                                  income_features,market_cap,cashflow_features,estimations_features,balance_features,hist_data_df_for_stock):
+                
+                   
+    max_in_8M, max8M_date = extract_max_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(months=8)).date(),input_date,hist_data_df_for_stock,return_date=True)
+    min_in_8M, min8M_date = extract_min_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(months=8)).date(),input_date,hist_data_df_for_stock,return_date=True)
+    pe = safe_divide(price_at_date,safe_dict_get(estimations_features,'current_estimated_eps'))
+    eps_growth = safe_divide((safe_dict_get(estimations_features,'future_estimated_eps')-safe_dict_get(estimations_features,'current_estimated_eps')),safe_dict_get(estimations_features,'current_estimated_eps'))
+    peg = safe_divide(pe,eps_growth)
+    EV = calculate_EV(market_cap,balance_features,income_features)
+    evgp = safe_divide(EV,safe_dict_get(income_features, 'grossProfit'))
+    markRevRAtio  = safe_divide(market_cap,safe_dict_get(income_features,'revenue'))
+    if(isinstance(sma_100d_dict, list)):
+        sma100d = extract_SMA(input_date,sma_100d_dict)
+        sma50d = extract_SMA(input_date,sma_50d_dict)
+        sma10d = extract_SMA(input_date,sma_10d_dict)
+        sma_50w = extract_SMA(input_date,sma_50w_dict)
+        sma_200d = extract_SMA(input_date,sma_200d_dict)
+        sma_10d_11mago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=11)).date(), sma_10d_dict)
+        sma_10d_6mago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=6)).date(), sma_10d_dict)
+        sma_10d_2months_ago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=2)).date(), sma_10d_dict)
+    else:
+        if sma_100d_dict is None:
+            sma100d = None
+        else:
+            sma100d = extract_SMA(input_date,sma_100d_dict[symbol])
+        sma50d = extract_SMA(input_date,sma_50d_dict[symbol])
+        sma10d = extract_SMA(input_date,sma_10d_dict[symbol])
+        sma_50w = extract_SMA(input_date,sma_50w_dict[symbol])
+        sma_200d = extract_SMA(input_date,sma_200d_dict[symbol])
+        sma_10d_11mago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=11)).date(), sma_10d_dict[symbol])
+        sma_10d_6mago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=6)).date(), sma_10d_dict[symbol])
+        sma_10d_2months_ago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=2)).date(), sma_10d_dict[symbol])
+    #[  'max_in_2W',  'fwdPriceTosale_diff']
+    feature_calculations = {
+        'evebitda': lambda: ev_ebitda,
+        'netIncome': lambda: safe_dict_get(income_features,'netIncome'),
+        'sma_50w': lambda: sma_50w,
+        'sma_50d': lambda: sma50d,
+        'sma_200d': lambda: sma_200d,
+        'sma_100d': lambda: sma100d,
+        'sma_10d': lambda: sma10d,
+        'price': lambda: price_at_date,
+        'marketCap': lambda: market_cap,
+        'EV': lambda: EV,
+        'sma10_yoy_growth': lambda: safe_multiply(safe_subtract(safe_divide(sma10d,sma_10d_11mago),1), 100),
+        'deriv_2m': lambda:safe_divide(safe_subtract(price_at_date,sma_10d_2months_ago),2),
+        'sma_100d_to_sma_200d_ratio': lambda : safe_subtract(safe_divide(sma100d, sma_200d), 1),
+        'max_in_8M': lambda: max_in_8M,
+        'max_minus_min8M': lambda:safe_subtract(max_in_8M,min_in_8M),
+        'markRevRatio': lambda: markRevRAtio ,
+        'eps_growth': lambda: eps_growth,
+        'pe': lambda: pe,
+        'peg': lambda: peg,
+        'EVGP': lambda: evgp,
+        'combined_valuation_score' :lambda: safe_divide(safe_add(safe_add(safe_add(pe, peg),evgp),markRevRAtio),4),
+        'EVRevenues': lambda: safe_divide(EV,safe_dict_get(income_features,'revenue')),
+        'fwdPriceTosale': lambda: safe_divide(market_cap,safe_dict_get(estimations_features,'future_estim_rev')),
+        'var_sma100D': lambda:safe_divide(safe_subtract(price_at_date,sma100d),sma100d),
+        'var_sma50D_100D': lambda:safe_divide(safe_subtract(sma50d,sma100d),sma100d),
+        'var_sma10D_100D':  lambda:safe_divide(safe_subtract(sma10d,sma100d),sma100d),
+        '1y_return' :lambda: safe_divide(safe_subtract(price_at_date,sma_10d_11mago),sma_10d_11mago),
+        '1Y_6M_growth': lambda: safe_divide(safe_subtract(sma_10d_6mago,sma_10d_11mago),sma_10d_11mago),
+    }
+
+    # Calculate only the required features
+    data_dict = {'date': input_date, 'symbol': symbol}
+    for feature in features_for_pred:
+        if feature in feature_calculations:
+            data_dict[feature] = feature_calculations[feature]()
+
+    data = pd.DataFrame([data_dict])
+
+    if 'peRatio' in data:
+        data['peRatio'] = data['peRatio'].round(2)
+    #print(data)
+    # Convert date to datetime if it's not already
+    data['date'] = pd.to_datetime(data['date'])
+
+    if any(data_dict.get(feature) is None for feature in features_for_pred):
+        return None, None
     
-    return None
+    X = data[features_for_pred]
+    X_scaled = scaler.transform(X)
+
+    prediction = model.predict(X_scaled)
+    probability = model.predict_proba(X_scaled)[0, 1]  # Probability of class 1 (buy)
+    #probability=1
+    return prediction[0], probability
 
 
 def extract_STD(date,sorted_data):
@@ -336,47 +397,6 @@ def extract_multiple_SMAs(base_date: Union[str, datetime, pd.Timestamp], sorted_
             if current_target_idx>=len(labels):
                 break
     return results
-
-def extract_Field(date,sorted_source_data,field_name):
-    if sorted_source_data is None:
-        return None
-
-    if isinstance(date, str):
-        date = datetime.strptime(date, '%Y-%m-%d').date()
-    elif isinstance(date, pd.Timestamp):
-        date = date.date()
-    elif isinstance(date, datetime):
-        date = date.date()
-
-    min_date = date - timedelta(days=100)
-
-    for entry in sorted_source_data:
-        entry_date = datetime.strptime(entry['date'].split()[0], "%Y-%m-%d").date() 
-        if min_date <= entry_date <= date:
-            if field_name in entry:
-                return round(entry[field_name], 2)
-    print("we found nothing !")
-    return None
-
-def extract_CashAndCash(date,sorted_balance_data):
-    if sorted_balance_data is None:
-        return None
-
-    if isinstance(date, str):
-        date = datetime.strptime(date, '%Y-%m-%d').date()
-    elif isinstance(date, pd.Timestamp):
-        date = date.date()
-    elif isinstance(date, datetime):
-        date = date.date()
-
-    min_date = date - timedelta(days=100)
-
-    for entry in sorted_balance_data:
-        entry_date = datetime.strptime(entry['date'].split()[0], "%Y-%m-%d").date() 
-        if min_date <= entry_date <= date:
-            return round(entry['cashAndCashEquivalents'], 2)
-        
-    return None
 
 def extract_total_debt(date,sorted_balance_data):
     if sorted_balance_data is None:
@@ -628,36 +648,23 @@ def calculate_evebitda(random_date,market_cap_data,balance_data,income_data):
     EV =  mc+total_debt-cashncasheq
     return EV/ebitda
 
+
+
+def calculate_evebitda_from_features(random_date,mc,balance_features,income_features):
+    if income_features is None or balance_features is None:
+        return None
+    ebitda = income_features['ebitda']
+    EV =  calculate_EV(mc,balance_features,income_features)
+    if EV==0:
+        return None
+    return safe_divide(EV,ebitda)
+
 def calculate_pe_ratio(input_date,price,income_data):
     eps_income = extract_net_inome(input_date,income_data)
 
     if eps_income is None or price is None or eps_income ==0:
         return None 
     return price/eps_income
-
-def get_historical_price(symbol):
-    url_price = f'https://financialmodelingprep.com/api/v3/historical-chart/1day/{symbol}?from=2018-01-01&to=2024-10-16&apikey={api_key}'
-    try:
-        response = requests.get(url_price, timeout=2)  # Increased timeout to 2 seconds
-        response.raise_for_status()  # Raises an HTTPError for bad responses
-    except Timeout:
-        print(f"Request timed out for symbol {symbol}")
-        return None
-    except ConnectionError:
-        print(f"Connection error occurred for symbol {symbol}")
-        return None
-    except RequestException as e:
-        print(f"An error occurred while fetching data for symbol {symbol}: {str(e)}")
-        return None
-
-    try:
-        data_price = response.json()
-    except json.JSONDecodeError:
-        print(f"Failed to decode JSON for symbol {symbol}. Response content: {response.text[:200]}...")
-        return None
-
-    return data_price
-
 
 def extract_income_features(input_date,sorted_income_data):
     if isinstance(input_date, str):
@@ -736,91 +743,6 @@ def extract_estimation_features(input_date,sorted_estimation_data):
                 }
     else :
         return None
-    
-def extract_cashflow_features(input_date,sorted_cashflow_data):
-    if isinstance(input_date, str):
-        input_date = datetime.strptime(input_date, '%Y-%m-%d').date()
-    elif isinstance(input_date, pd.Timestamp):
-        input_date = input_date.date()
-    elif isinstance(input_date, datetime):
-        input_date = input_date.date()
-
-    if sorted_cashflow_data==None:
-        return None
-    
-    min_date = input_date - timedelta(days=100)
-
-    for entry in sorted_cashflow_data:
-        entry_date = datetime.strptime(entry['date'].split()[0], "%Y-%m-%d").date()
-        if min_date<=entry_date <= input_date:
-            lag_days = (input_date - entry_date).days
-            return {
-                "debtRepayment": entry["debtRepayment"],
-                "lag_days": lag_days,
-                "freeCashFlow": entry["freeCashFlow"],
-                "dividendsPaid": entry["dividendsPaid"],
-                "otherFinancingActivites": entry["otherFinancingActivites"],
-                "operatingCashFlow": entry['operatingCashFlow'],
-                "capitalExpenditure": entry['capitalExpenditure']
-            }
-    return None
-
-def extract_balance_features(input_date,sorted_BALANCE_data):
-    if isinstance(input_date, str):
-        input_date = datetime.strptime(input_date, '%Y-%m-%d').date()
-    elif isinstance(input_date, pd.Timestamp):
-        input_date = input_date.date()
-    elif isinstance(input_date, datetime):
-        input_date = input_date.date()
-
-    if sorted_BALANCE_data==None:
-        return None
-    
-    min_date = input_date - timedelta(days=100)
-
-    for entry in sorted_BALANCE_data:
-        entry_date = datetime.strptime(entry['date'].split()[0], "%Y-%m-%d").date()
-        if min_date<=entry_date <= input_date:
-            lag_days = (input_date - entry_date).days
-            return {
-                "cashAndCashEquivalents": entry["cashAndCashEquivalents"],
-                "totalDebt": entry["totalDebt"],
-                "bal_lag_days":lag_days,
-                "netDebt": entry["netDebt"],
-                "totalAssets": entry["totalAssets"],
-                "otherCurrentAssets": entry["otherCurrentAssets"],
-                "totalLiabilities": entry["totalLiabilities"],
-                "totalEquity": entry["totalEquity"],
-                "cashAndShortTermInvestments": entry["cashAndShortTermInvestments"],
-                "netReceivables": entry["netReceivables"],
-                "totalCurrentLiabilities": entry["totalCurrentLiabilities"],
-                "totalStockholdersEquity": entry["totalStockholdersEquity"]
-            }
-    return None
-
-
-def extract_market_cap(date,sorted_data):
-
-    if sorted_data is None:
-        return None
-    if isinstance(date, str):
-        date = datetime.strptime(date, '%Y-%m-%d').date()
-    elif isinstance(date, pd.Timestamp):
-        date = date.date()
-    elif isinstance(date, datetime):
-        date = date.date()
-
-    if sorted_data==None:
-        return None
-    
-    min_date = date - timedelta(days=5)
-
-    for entry in sorted_data:
-        entry_date = datetime.strptime(entry['date'].split()[0], "%Y-%m-%d").date()
-        if min_date<=entry_date <= date:
-            return entry['marketCap']
-    
-    return None
 
 def extract_min_price_in_range(start_date, end_date,historical_data,return_date=False):
     #print(f"extract_min_price_in_range({start_date},{end_date})")
@@ -883,6 +805,8 @@ def extract_max_price_in_range(start_date, end_date,historical_data,return_date=
         else:
             return max_price
 
+    if return_date == True:
+        return None,None
     return None
 
 def extract_stock_price_at_date(date,historical_data =None,not_None=False):
@@ -903,43 +827,6 @@ def extract_stock_price_at_date(date,historical_data =None,not_None=False):
     else:
        return None
     
-
-def get_balance_shit(symbol,period):
-    balance_sheet_url = f"https://financialmodelingprep.com/api/v3/balance-sheet-statement/{symbol}?period={period}&apikey={api_key}"
-    try:
-        response_income = requests.get(balance_sheet_url, timeout=2)
-    except requests.exceptions.Timeout:
-        print("Request timed out")
-        return None
-
-    if response_income.status_code != 200:
-        print(f"Error: API returned status code {response_income.status_code}")
-        return None
-    data_income = response_income.json()
-    sorted_data = sorted(data_income, key=lambda x: datetime.strptime(x['date'].split()[0], "%Y-%m-%d"), reverse=True)
-
-    return sorted_data
-
-def get_company_sector(stock):
-    url = f'https://financialmodelingprep.com/api/v3/profile/{stock}?apikey={api_key}'
-
-    try:
-        response_= requests.get(url, timeout=2)
-    except requests.exceptions.Timeout:
-        print("Request timed out")
-        return None
-
-    if response_.status_code != 200:
-        print(f"Error: API returned status code {response_.status_code}")
-        return None
-    
-    data = response_.json()
-    if not data or not isinstance(data, list) or 'sector' not in data[0]:
-        print("Error: Invalid or empty response data")
-        return "unknown"  # Default value if sector is missing
-
-    return data[0]['sector'].lower() if data[0]['sector'] else "unknown"
-
 
 def calculate_sector_relatives(df, sector_column):
     """
@@ -966,93 +853,4 @@ def calculate_sector_relatives(df, sector_column):
             df_new[f'{metric}_sector_relative'] = df[metric] / sector_means - 1
     
     return df_new
- 
-def get_income_dict(symbol,period):
-    url_income = f'https://financialmodelingprep.com/api/v3/income-statement/{symbol}?period={period}&apikey={api_key}'
 
-    try:
-        response_income = requests.get(url_income, timeout=2)
-    except requests.exceptions.Timeout:
-        print("Request timed out")
-        return None
-
-    if response_income.status_code != 200:
-        print(f"Error: API returned status code {response_income.status_code}")
-        return None
-    data_income = response_income.json()
-    sorted_data = sorted(data_income, key=lambda x: datetime.strptime(x['date'].split()[0], "%Y-%m-%d"), reverse=True)
-
-    return sorted_data
-
-def get_estimation_dict(symbol,period):
-    url = f'https://financialmodelingprep.com/api/v3/analyst-estimates/{symbol}?period={period}&apikey={api_key}'
-    try:
-        response_income = requests.get(url, timeout=2)
-    except requests.exceptions.Timeout:
-        print("Request timed out")
-        return None
-
-    if response_income.status_code != 200:
-        print(f"Error: API returned status code {response_income.status_code}")
-        return None
-    data_income = response_income.json()
-    sorted_data = sorted(data_income, key=lambda x: datetime.strptime(x['date'].split()[0], "%Y-%m-%d"), reverse=True)
-
-    return sorted_data
-
-def get_cashflow_dict(symbol,period):
-    url_income = f'https://financialmodelingprep.com/api/v3/cash-flow-statement/{symbol}?period={period}&apikey={api_key}'
-
-    try:
-        response_income = requests.get(url_income, timeout=2)
-    except requests.exceptions.Timeout:
-        print("Request timed out")
-        return None
-
-    if response_income.status_code != 200:
-        print(f"Error: API returned status code {response_income.status_code}")
-        return None
-    data_income = response_income.json()
-    sorted_data = sorted(data_income, key=lambda x: datetime.strptime(x['date'].split()[0], "%Y-%m-%d"), reverse=True)
-
-    return sorted_data
-
-def get_historical_market_cap(stock):
-    url_market_cap = f'https://financialmodelingprep.com/api/v3/historical-market-capitalization/{stock}?from=2018-10-10&to=2024-10-20&apikey={api_key}'
-
-    try:
-        response_sma = requests.get(url_market_cap, timeout=1)
-    except requests.exceptions.Timeout:
-        print("Request timed out")
-        return None
-
-    if response_sma.status_code != 200:
-        print(f"Error: API returned status code {response_sma.status_code}")
-        return None
-    data_sma = response_sma.json()
-    sorted_data = sorted(data_sma, key=lambda x: datetime.strptime(x['date'].split()[0], "%Y-%m-%d"), reverse=True)
-
-    
-    return sorted_data
-
-
-def convert_to_df(date_to_close):
-    if date_to_close is None:
-       return None
-    date_to_close_df = pd.DataFrame(date_to_close.items(), columns=['date', 'close'])
-    date_to_close_df['date'] = pd.to_datetime(date_to_close_df['date'])
-    date_to_close_df.set_index('date', inplace=True)
-    date_to_close_df.sort_index(inplace=True)
-    return date_to_close_df
-
-def convert_to_dict(historic_data):
-    if historic_data is None:
-        return None
-    date_to_close = {}
-    for entry in historic_data:
-        try:
-            date_obj = datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S').date()
-            date_to_close[date_obj] = entry['close']
-        except ValueError as e:
-            print(f"Date format error in entry {entry}: {e}")
-    return date_to_close

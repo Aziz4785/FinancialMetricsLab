@@ -1,0 +1,102 @@
+Feature Subset 5: ['price', 'month', 'RnD_expenses', 'revenues', 'GP', 'dividendsPaid', 'curr_est_eps', 'EV', 'min_in_4M', 'max_minus_min', 'max_in_8M', 'dist_min8M_4M', 'ebitdaMargin', 'eps_growth', 'peg', 'PS_to_PEG', 'fwdPriceTosale_diff', 'var_sma50D_100D', '1Y_6M_growth', 'combined_valuation_score'] 
+
+RF1 Results:
+specificity = 0.9895470383275261
+Precision Score: 0.9889
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.95      0.99      0.97       287
+           1       0.99      0.94      0.97       284
+
+    accuracy                           0.97       571
+   macro avg       0.97      0.97      0.97       571
+weighted avg       0.97      0.97      0.97       571
+
+
+RF3 Results:
+specificity = 0.9895470383275261
+Precision Score: 0.9889
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.95      0.99      0.97       287
+           1       0.99      0.94      0.97       284
+
+    accuracy                           0.97       571
+   macro avg       0.97      0.97      0.97       571
+weighted avg       0.97      0.97      0.97       571
+
+
+RF4 Results:
+specificity = 0.9895470383275261
+Precision Score: 0.9889
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.95      0.99      0.97       287
+           1       0.99      0.94      0.97       284
+
+    accuracy                           0.97       571
+   macro avg       0.97      0.97      0.97       571
+weighted avg       0.97      0.97      0.97       571
+
+
+========== Feature Subset 4: ['price', 'month', 'RnD_expenses', 'revenues', 'GP', 'curr_est_eps', 'min_in_4M', 'max_minus_min', 'max_in_8M', 'dist_min8M_4M', 'ebitdaMargin', 'eps_growth', 'peg', 'PS_to_PEG', '1Y_6M_growth', 'combined_valuation_score'] ==========
+RF1 Results:
+specificity = 0.9895470383275261
+Precision Score: 0.9889
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.94      0.99      0.97       287
+           1       0.99      0.94      0.96       284
+
+    accuracy                           0.96       571
+   macro avg       0.97      0.96      0.96       571
+weighted avg       0.97      0.96      0.96       571
+
+RF4 Results:
+specificity = 0.9895470383275261
+Precision Score: 0.9889
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.94      0.99      0.97       287
+           1       0.99      0.94      0.96       284
+
+    accuracy                           0.96       571
+   macro avg       0.97      0.96      0.96       571
+weighted avg       0.97      0.96      0.96       571
+
+
+
+========== Feature Subset 1: ['price', 'sma_100d', 'RnD_expenses', 'EV', 'maxPercen_4M', 'max_in_2W', 'pe', 'peg', 'EVEbitdaRatio', 'EVGP', 'fwdPriceTosale', 'fwdPriceTosale_diff', '3M_2M_growth', '1Y_6M_growth', 'combined_valuation_score', 'sma10_yoy_growth'] ==========
+RF4a Results:
+specificity = 0.9860627177700348
+Precision Score: 0.9853
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.95      0.99      0.97       287
+           1       0.99      0.95      0.97       284
+
+    accuracy                           0.97       571
+   macro avg       0.97      0.97      0.97       571
+weighted avg       0.97      0.97      0.97       571
+
+
+
+Feature Subset 2: ['price', 'pe_ratio', 'sma_100d', 'RnD_expenses', 'marketCap', 'EV', 'maxPercen_4M', 'max_in_2W', 'pe', 'peg', 'EVEbitdaRatio', 'EVGP', 'fwdPriceTosale', 'fwdPriceTosale_diff', '3M_2M_growth', '1Y_6M_growth', 'combined_valuation_score', 'sma10_yoy_growth']
+XGB4 Results:
+specificity = 0.9825783972125436
+Precision Score: 0.9820
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.96      0.98      0.97       287
+           1       0.98      0.96      0.97       284
+
+    accuracy                           0.97       571
+   macro avg       0.97      0.97      0.97       571
+weighted avg       0.97      0.97      0.97       571

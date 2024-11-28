@@ -1,0 +1,1 @@
+dividend_payout_ratio>=-0.08 and e_current_estimated_eps<=-0.07

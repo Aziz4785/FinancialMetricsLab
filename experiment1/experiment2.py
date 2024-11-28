@@ -9,10 +9,10 @@ from .utils import *
 to run : py -m experiment1.experiment2
 """
 SHOW_FEATURE_IMPORTANCE = False
-DEPTH = 3
+DEPTH = 2
 
-df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/cleaned_data_10_in_2M.csv')
-MIN_SAMPLE_LEAFS = 1000#int(0.1*len(df))
+df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/cleaned_data_14_in_7W.csv')
+MIN_SAMPLE_LEAFS = 800#int(0.1*len(df))
 
 # Prepare features (X) and target (y)
 exclude_columns = ['target', 'stock', 'date','1Y_return','6M_return']

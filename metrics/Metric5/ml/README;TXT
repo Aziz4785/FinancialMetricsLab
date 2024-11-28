@@ -1,0 +1,93 @@
+========== Feature Subset 0: ['price', 'evebitda', 'sma_50d', 'marketCap', 'EV', 'max_in_2W', 'markRevRatio', 'peg', 'EVRevenues', 'fwdPriceTosale', 'fwdPriceTosale_diff', 'var_sma100D', 'var_sma50D_100D', 'var_sma10D_100D', '1y_return', '1Y_6M_growth'] ==========
+----------------------
+
+DT1 Results:
+specificity = 1.0
+Precision Score: 1.0000
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.96      1.00      0.98       109
+           1       1.00      0.97      0.98       123
+
+    accuracy                           0.98       232
+   macro avg       0.98      0.98      0.98       232
+weighted avg       0.98      0.98      0.98       232
+
+RF2 Results:
+specificity = 1.0
+Precision Score: 1.0000
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.99      1.00      1.00       109
+           1       1.00      0.99      1.00       123
+
+    accuracy                           1.00       232
+   macro avg       1.00      1.00      1.00       232
+weighted avg       1.00      1.00      1.00       232
+
+
+
+========== Feature Subset 11: ['evebitda', 'sma_200d', 'sma_50d', 'marketCap', 'markRevRatio', 'EVRevenues', 'fwdPriceTosale', 'deriv_2m', '1Y_6M_growth', 'sma_100d_to_sma_200d_ratio', 'combined_valuation_score', 'sma10_yoy_growth'] ==========
+XGB7 Results:
+specificity = 1.0
+Precision Score: 1.0000
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.99      1.00      1.00       109
+           1       1.00      0.99      1.00       123
+
+    accuracy                           1.00       232
+   macro avg       1.00      1.00      1.00       232
+weighted avg       1.00      1.00      1.00       232
+
+
+========== Feature Subset 9: ['marketCap', 'fwdPriceTosale', 'sma_100d_to_sma_200d_ratio', 'combined_valuation_score'] ==========
+XGB7 Results:
+specificity = 0.9908256880733946
+Precision Score: 0.9919
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.99      0.99      0.99       109
+           1       0.99      0.99      0.99       123
+
+    accuracy                           0.99       232
+   macro avg       0.99      0.99      0.99       232
+weighted avg       0.99      0.99      0.99       232
+
+
+========== Feature Subset 7: ['evebitda', 'RnD_expenses', 'marketCap', 'eps_growth', 'peg', 'fwdPriceTosale', 'var_sma10D_100D', 'deriv_2m', 'deriv_min8M', '1Y_6M_growth', 'sma_100d_to_sma_200d_ratio', 'combined_valuation_score'] ==========
+RF7 Results:
+specificity = 0.9908256880733946
+Precision Score: 0.9919
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.99      0.99      0.99       109
+           1       0.99      0.99      0.99       123
+
+    accuracy                           0.99       232
+   macro avg       0.99      0.99      0.99       232
+weighted avg       0.99      0.99      0.99       232
+
+
+
+
+========== Feature Subset 5: ['RnD_expenses', 'eps_growth', 'deriv_min8M', 'sma_100d_to_sma_200d_ratio'] ==========
+----------------------
+
+RF8 Results:
+specificity = 0.9908256880733946
+Precision Score: 0.9911
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.90      0.99      0.94       109
+           1       0.99      0.90      0.94       123
+
+    accuracy                           0.94       232
+   macro avg       0.95      0.95      0.94       232
+weighted avg       0.95      0.94      0.94       232

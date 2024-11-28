@@ -21,12 +21,6 @@ load_dotenv()
 # Access the API key
 api_key = os.getenv('FMP_API_KEY')
 
-def load_stocks(nbr,path='sp500_final.csv'):
-    stocks_df = pd.read_csv(path)
-    stocks = stocks_df['Ticker'].tolist()
-    stocks = random.sample(stocks, nbr)
-    return stocks
-
 def fetch_stock_data(stocks):
     historical_data_for_stock = {}
     market_cap_dict = {}
@@ -73,17 +67,6 @@ def get_income_statements(symbol,period):
 
     return sorted_data
 
-def get_current_price(symbol):
-    url = f'https://financialmodelingprep.com/api/v3/quote/{symbol}?apikey={api_key}'
-    try:
-      response_key_metrics = requests.get(url, timeout=2)
-    except Timeout:
-      print("Request timed out")
-      return None
-    data_price = response_key_metrics.json()
-    current_price = data_price[0].get('price')
-    return current_price
-
 def get_max_price_in_range(symbol, start_date, end_date,historical_data=None):
     # Convert dates to datetime objects if they're strings
     if isinstance(start_date, str):
@@ -128,15 +111,6 @@ def get_max_price_in_range(symbol, start_date, end_date,historical_data=None):
     return max_price
 
 
-def convert_to_df(date_to_close):
-    if date_to_close is None:
-       return None
-    date_to_close_df = pd.DataFrame(date_to_close.items(), columns=['date', 'close'])
-    date_to_close_df['date'] = pd.to_datetime(date_to_close_df['date'])
-    date_to_close_df.set_index('date', inplace=True)
-    date_to_close_df.sort_index(inplace=True)
-    return date_to_close_df
-
 
 def get_revenues(symbol,period):
     url_income = f'https://financialmodelingprep.com/api/v3/income-statement/{symbol}?period={period}&apikey={api_key}'
@@ -155,40 +129,6 @@ def get_revenues(symbol,period):
 
     return sorted_data
 
-def convert_to_dict(historic_data):
-    if historic_data is None:
-        return None
-    date_to_close = {}
-    for entry in historic_data:
-        try:
-            date_obj = datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S').date()
-            date_to_close[date_obj] = entry['close']
-        except ValueError as e:
-            print(f"Date format error in entry {entry}: {e}")
-    return date_to_close
-
-def get_historical_price(symbol):
-    url_price = f'https://financialmodelingprep.com/api/v3/historical-chart/1day/{symbol}?from=2018-01-01&to=2024-10-16&apikey={api_key}'
-    try:
-        response = requests.get(url_price, timeout=2)  # Increased timeout to 2 seconds
-        response.raise_for_status()  # Raises an HTTPError for bad responses
-    except Timeout:
-        print(f"Request timed out for symbol {symbol}")
-        return None
-    except ConnectionError:
-        print(f"Connection error occurred for symbol {symbol}")
-        return None
-    except RequestException as e:
-        print(f"An error occurred while fetching data for symbol {symbol}: {str(e)}")
-        return None
-
-    try:
-        data_price = response.json()
-    except json.JSONDecodeError:
-        print(f"Failed to decode JSON for symbol {symbol}. Response content: {response.text[:200]}...")
-        return None
-
-    return data_price
 
 def add_pe_ratio(df):
     """
@@ -263,6 +203,57 @@ def fetch_data_for_ml(stocks):
             print(f"i = {i} we sleep")
             time.sleep(20)
     return sma_10d_dict,sma_50w_dict,sma_100d_dict ,sma_200d_dict ,sma_50d_dict,income_dict
+
+def extract_stock_price_at_date(date,historical_data =None,not_None=False):
+    if isinstance(date, str):
+        date = datetime.strptime(date, '%Y-%m-%d').date()
+    elif isinstance(date, pd.Timestamp):
+        date = date.date()
+
+    if historical_data is not None:
+        if not_None==True:
+           #if Nnot_None is True i want to get the most recent price before date
+           for days_back in range(4): 
+                test_date = date - timedelta(days=days_back)
+                if test_date in historical_data:
+                    return historical_data[test_date]
+           return None  # If no data found in the last 4 days
+        return historical_data.get(date)
+    else:
+       return None
+
+def extract_income_features(input_date,sorted_income_data):
+    if isinstance(input_date, str):
+        input_date = datetime.strptime(input_date, '%Y-%m-%d').date()
+    elif isinstance(input_date, pd.Timestamp):
+        input_date = input_date.date()
+    elif isinstance(input_date, datetime):
+        input_date = input_date.date()
+
+    if sorted_income_data==None:
+        return None
+    
+    min_date = input_date - timedelta(days=100)
+
+    for entry in sorted_income_data:
+        entry_date = datetime.strptime(entry['date'].split()[0], "%Y-%m-%d").date()
+        if min_date<=entry_date <= input_date:
+            lag_days = (input_date - entry_date).days
+            return {
+                "revenue": entry["revenue"],
+                "inc_lag_days": lag_days,
+                "costOfRevenue": entry["costOfRevenue"],
+                "grossProfit": entry["grossProfit"],
+                "netIncome": entry["netIncome"],
+                "otherExpenses": entry["otherExpenses"],
+                "eps": entry["eps"],
+                "ebitda": entry["ebitda"],
+                "researchAndDevelopmentExpenses": entry["researchAndDevelopmentExpenses"],
+                "interestIncome": entry["interestIncome"]
+            }
+    return None
+
+
 
 def predict_buy(model,scaler,date,symbol,features_for_pred,price,pr_ratio,sma_10d_dict,sma_50w_dict,sma_100d_dict ,sma_200d_dict ,income_dict):
     # ['revenues', 'price', 'pe_ratio', 'ebitdaMargin', 'ratio', 'sma_100d', 'sma_200d']
@@ -352,58 +343,6 @@ def calculate_current_price_to_revenue_ratio(stock,date,market_cap_values,income
     if pr_ratio>=200:
         return None 
     return pr_ratio
-
-def get_current_market_cap(stock):
-  url = f'https://financialmodelingprep.com/api/v3/market-capitalization/{stock}?apikey={api_key}'
-  try:
-      response_sma = requests.get(url, timeout=2)
-  except requests.exceptions.Timeout:
-      print("Request timed out")
-      return None
-  if response_sma.status_code != 200:
-      print(f"Error: API returned status code {response_sma.status_code}")
-      return None
-  data = response_sma.json()
-  if len(data)>0:
-    return data[0]['marketCap']
-  else:
-    return None
-  
-def get_historical_market_cap(date,stock,sorted_data=None,do_api_call=True):
-    if date != 'all':
-        if do_api_call ==False and sorted_data is None:
-            return None
-        if isinstance(date, str):
-            date = datetime.strptime(date, '%Y-%m-%d').date()
-        elif isinstance(date, pd.Timestamp):
-            date = date.date()
-        elif isinstance(date, datetime):
-            date = date.date()
-    if sorted_data==None:
-        url_market_cap = f'https://financialmodelingprep.com/api/v3/historical-market-capitalization/{stock}?from=2018-10-10&to=2024-10-20&apikey={api_key}'
-
-        try:
-            response_sma = requests.get(url_market_cap, timeout=1)
-        except requests.exceptions.Timeout:
-            print("Request timed out")
-            return None
-
-        if response_sma.status_code != 200:
-            print(f"Error: API returned status code {response_sma.status_code}")
-            return None
-        data_sma = response_sma.json()
-        sorted_data = sorted(data_sma, key=lambda x: datetime.strptime(x['date'].split()[0], "%Y-%m-%d"), reverse=True)
-    if date=='all':
-        return sorted_data
-    min_date = date - timedelta(days=5)
-
-    for entry in sorted_data:
-        entry_date = datetime.strptime(entry['date'].split()[0], "%Y-%m-%d").date()
-        if min_date<=entry_date <= date:
-            return entry['marketCap']
-    
-    return None
-
 
 def get_stock_price_at_date(symbol, date,historical_data =None,not_None=False):
     if isinstance(date, str):

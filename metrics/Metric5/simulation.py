@@ -10,7 +10,7 @@ run it several time with not a big number of stocks (250 is good) and pick the
 most consistent combination of parameters
 """
 
-MIN_BUDGET_BY_STOCK = 400
+MIN_BUDGET_BY_STOCK = 600
 TRANSACITON_FEE = 1.5
 #DIVPAYOUT_LOWER_BOUND = -0.02
 #DIVPAYOUT_UPPER_BOUND = 0.1
@@ -18,7 +18,7 @@ EV_EBITDA_UP = 30
 EV_EBITDA_LOW = -30
 FUTURE_EPS_UP = 0.01
 #REVGROWTH_LOW_BOUND = 0.09
-NBR_OF_SIMULATION = 1200
+NBR_OF_SIMULATION = 1000
 SELL_LIMIT_PERCENTAGE_1 = 10.9
 #PE_UPPER_BOUND = 26.41
 #PE_LOWER_BOUND = -20
@@ -27,19 +27,22 @@ WAITING_IN_WEEKS = 8
 A_GOOD_RETURN = 0.099
 A_BAD_RETURN = 0.05 
 GRID_SEARCH = False
-SAVE_ONLY_BAD_PRED=False
-USE_ML = False
-DEBUG_FREQUENCY=5
-stocks = load_stocks(500,'C:/Users/aziz8/Documents/FinancialMetricsLab/stock_list.csv')
-historical_data_for_stock, market_cap_dict, income_dict, hist_data_df_for_stock,balance_dict,cashflow_dict,estimations_dict,sector_dict = fetch_stock_data(stocks)
+SAVE_ONLY_BAD_PRED=True
+USE_ML = True
+DEBUG_FREQUENCY=2
+stocks = load_stocks(250,'C:/Users/aziz8/Documents/FinancialMetricsLab/stock_list.csv')
+historical_data_for_stock, market_cap_dict, income_dict, hist_data_df_for_stock,balance_dict,cashflow_dict,estimations_dict,_ = fetch_stock_data(stocks)
 
+if USE_ML:
+    sma_10d_dict,sma_50w_dict,sma_100d_dict,sma_200d_dict,sma_50d_dict,_,_,_ = fetch_data_for_ml(stocks)
+    model,scaler = load_models()
 
 print("sleep just before simulation")
 time.sleep(30)
 
 today = pd.Timestamp.today()
 
-min_random_date = today - pd.DateOffset(months=69)
+min_random_date = today - pd.DateOffset(months=60)
 max_random_date = today - pd.DateOffset(weeks=9)
 
 date_range = pd.date_range(start=min_random_date, end=max_random_date, freq='D')
@@ -74,9 +77,9 @@ def simulation():
             if historical_data_for_stock[stock] is None or hist_data_df_for_stock[stock] is None or income_dict[stock] is None:
                 if income_dict[stock] is None:
                     nbr_of_None_income+=1
-                if not GRID_SEARCH:
-                    if i%DEBUG_FREQUENCY==0:
-                        print("one of the input data is None")
+                # if not GRID_SEARCH:
+                #     if i%DEBUG_FREQUENCY==0:
+                #         print("one of the input data is None")
                 continue
             price_at_date = extract_stock_price_at_date(random_date,historical_data_for_stock[stock])
             if price_at_date is None:
@@ -85,7 +88,14 @@ def simulation():
             
             #dividend_payout_ratio = calculate_div_payout_ratio(random_date,cashflow_dict[stock],income_dict[stock])
             #pe_ratio = calculate_pe_ratio(random_date,price_at_date,income_dict[stock])
-            ev_ebitda = calculate_evebitda(random_date,market_cap_dict[stock],balance_dict[stock],income_dict[stock])
+            income_features = extract_income_features(random_date,income_dict[stock])
+            market_cap = extract_market_cap(random_date,market_cap_dict[stock])
+            balance_features = extract_balance_features(random_date,balance_dict[stock])
+            estimations_features = extract_estimation_features(random_date,estimations_dict[stock])
+            cashflow_features =extract_cashflow_features(random_date,cashflow_dict[stock])
+
+            ev_ebitda = calculate_evebitda_from_features(random_date,market_cap,balance_features,income_features)
+            #ev_ebitda = calculate_evebitda(random_date,market_cap_dict[stock],balance_dict[stock],income_dict[stock])
             #revenue_est_growth = calculate_revenue_growth(random_date,estimations_dict[stock])
             #dividendsPaid = calculate_dividendPaid(random_date,cashflow_dict[stock])
             current_estimated_eps, future_eps = extract_current_and_future_estim_eps(random_date, estimations_dict[stock])
@@ -94,7 +104,20 @@ def simulation():
                 #nbr_of_None_evgp_ratio+=1
             if ev_ebitda is not None and ev_ebitda>=EV_EBITDA_LOW and ev_ebitda<=EV_EBITDA_UP:
                 if future_eps is not None and future_eps<=FUTURE_EPS_UP :
-                    stocks_in_range.append((stock, price_at_date,ev_ebitda,future_eps))
+                    if USE_ML:
+                        features1=['evebitda', 'sma_200d', 'sma_50d', 'marketCap', 'markRevRatio', 'EVRevenues', 'fwdPriceTosale', 'deriv_2m', '1Y_6M_growth', 'sma_100d_to_sma_200d_ratio', 'combined_valuation_score', 'sma10_yoy_growth']
+                        
+                        prediction, buy_probability = predict_buy(model,scaler,features1,random_date,stock,ev_ebitda,price_at_date,
+                                                                  sma_10d_dict,sma_50w_dict,sma_100d_dict ,sma_200d_dict ,sma_50d_dict,
+                                                                  income_features,market_cap,cashflow_features,estimations_features,balance_features,hist_data_df_for_stock[stock])
+
+                
+                        if prediction ==1 and  buy_probability>=0.97:
+                            if not GRID_SEARCH and i%DEBUG_FREQUENCY==0:
+                                print(f"we will buy {stock} (prob = {buy_probability})")
+                            stocks_in_range.append((stock, price_at_date,ev_ebitda,future_eps))
+                    else:
+                        stocks_in_range.append((stock, price_at_date,ev_ebitda,future_eps))
                     
 
         #if not GRID_SEARCH:
@@ -111,9 +134,9 @@ def simulation():
         budget_per_stock = MIN_BUDGET_BY_STOCK
 
         stocks_to_buy = stocks_in_range
-        if not GRID_SEARCH:
-            if i%DEBUG_FREQUENCY==0:
-                print("stocks to buy : ",stocks_to_buy)
+        # if not GRID_SEARCH:
+        #     if i%DEBUG_FREQUENCY==0:
+        #         print("stocks to buy : ",stocks_to_buy)
         for stock_to_buy in stocks_to_buy:
             buy = True
             
@@ -175,11 +198,13 @@ def simulation():
             total_gain.append(gain_on_that_simul)
         
     if not GRID_SEARCH:
-        training_data = pd.DataFrame(data_list)
-        training_data['date'] = pd.to_datetime(training_data['date'])
-
         print("nbr good : ",nbr_good)
         print("nbr_bad : ",nbr_bad)
+        training_data = pd.DataFrame(data_list)
+        if 'date' in training_data.columns:
+            training_data['date'] = pd.to_datetime(training_data['date'])
+
+        
         csv_filename = 'training_data.csv'
         print(f"unique stocks  : {len(unique_stocks)}")
         if NBR_OF_SIMULATION>=100:
@@ -189,7 +214,7 @@ def simulation():
     else:
         total_gain = np.array(total_gain)
         mean = np.mean(total_gain)
-        if nbr_total>0 and len(unique_stocks)>11:
+        if nbr_total>0 and len(unique_stocks)>11 and len(unique_stocks)<30: #this is hardocded if we sample 250 stocks for the simulation
             score = (nbr_good-nbr_bad)/((nbr_total)*WAITING_IN_WEEKS)
             if score >-10:
                 print(f"   ->score : {score}  mean : {mean}  uniquestocks = {len(unique_stocks)}")
