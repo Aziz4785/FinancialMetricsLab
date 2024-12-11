@@ -38,20 +38,27 @@ def fetch_stock_data(stocks):
     balance_shit_dict= {}
     cashflow_dict = {}
     estimations_dict = {}
-    old_prices_dict = {}
+    #old_prices_dict = {}
+    high_df={}
+    low_df={}
     for c, stock in enumerate(stocks):
         if c%100==0:
             print(c)
-        historic_data = get_historical_price(stock)
-        date_to_close = convert_to_dict(historic_data)
-        hist_data_df_for_stock[stock] = convert_to_df(date_to_close)
-        historical_data_for_stock[stock] = date_to_close
+        historic_data = get_very_old_price(stock)
+        if historic_data is not None and "historical" in historic_data:
+            #old_prices_dict[stock]=convert_to_dicts(historic_data["historical"],parse_time=False)
+            date_to_close,high_dict,low_dict = convert_to_dicts(historic_data["historical"],parse_time=False)
+            hist_data_df_for_stock[stock] = convert_to_df(date_to_close,'close')
+            high_df[stock] = convert_to_df(high_dict,'high')
+            low_df[stock] = convert_to_df(low_dict,'low')
+            historical_data_for_stock[stock] = date_to_close
 
-        old_prices = get_very_old_price(stock)
-        if old_prices is not None and "historical" in old_prices:
-            old_prices_dict[stock]=convert_to_dict(old_prices["historical"],parse_time=False)
         else:
-            old_prices_dict[stock] = None
+            hist_data_df_for_stock[stock] = None
+            high_df[stock] = None
+            low_df[stock] = None
+            historical_data_for_stock[stock] = None
+        
         market_cap_dict[stock] = get_historical_market_cap(stock)
         revenues_dict[stock] = get_income_dict(stock,'quarter')
         balance_shit_dict[stock] = get_balance_shit(stock,'quarter')
@@ -63,7 +70,7 @@ def fetch_stock_data(stocks):
             print("we sleep")
             time.sleep(50)
 
-    return historical_data_for_stock, market_cap_dict, revenues_dict, hist_data_df_for_stock,balance_shit_dict,cashflow_dict,estimations_dict,old_prices_dict
+    return historical_data_for_stock, high_df, low_df,market_cap_dict, revenues_dict, hist_data_df_for_stock,balance_shit_dict,cashflow_dict,estimations_dict
 
 def visualize_tree(dt,feature_columns):
     plt.figure(figsize=(20,10))
@@ -76,7 +83,7 @@ def visualize_tree(dt,feature_columns):
     plt.show()
     
 def get_very_old_price(symbol):
-    url_price = f'https://financialmodelingprep.com/api/v3/historical-price-full/{symbol}?from=2018-01-01&to=2019-12-12&apikey={api_key}'
+    url_price = f'https://financialmodelingprep.com/api/v3/historical-price-full/{symbol}?from=2018-01-01&to=2024-11-28&apikey={api_key}'
     try:
         response = requests.get(url_price, timeout=2)  # Increased timeout to 2 seconds
         response.raise_for_status()  # Raises an HTTPError for bad responses
@@ -100,7 +107,7 @@ def get_very_old_price(symbol):
 
 
 def get_historical_price(symbol):
-    url_price = f'https://financialmodelingprep.com/api/v3/historical-chart/1day/{symbol}?from=2018-01-01&to=2024-11-27&apikey={api_key}'
+    url_price = f'https://financialmodelingprep.com/api/v3/historical-chart/1day/{symbol}?from=2024-01-01&to=2024-11-27&apikey={api_key}'
     try:
         response = requests.get(url_price, timeout=2)  # Increased timeout to 2 seconds
         response.raise_for_status()  # Raises an HTTPError for bad responses
@@ -169,6 +176,23 @@ def calculate_growthpotential_ratio(rd_expenses, free_cash_flow, revenue):
         return numerator / revenue
         
     except (TypeError, ZeroDivisionError):
+        return None
+
+def safe_subtract(a, b):
+    if a is None or b is None:
+        return None
+    return a - b
+
+def safe_multiply(a, b):
+    if a is None or b is None:
+        return None
+    return a * b
+def safe_divide(numerator, denominator):
+    try:
+        if denominator == 0 or numerator is None or denominator is None:
+            return None
+        return numerator / denominator
+    except (ZeroDivisionError, TypeError):
         return None
     
 def safe_division_ratio(dividend_payout, rev_growth):
@@ -328,7 +352,92 @@ def extract_market_cap(date,sorted_data):
     return None
 
 
-def extract_max_price_in_range(start_date, end_date,historical_data):
+def extract_min_price_in_range(start_date, end_date,historical_data,return_date=False):
+    # Convert dates to datetime objects if they're strings
+    if isinstance(start_date, str):
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    elif isinstance(start_date, pd.Timestamp):
+        start_date = start_date.date()
+    if isinstance(end_date, str):
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    elif isinstance(end_date, pd.Timestamp):
+        end_date = end_date.date()
+
+    start_date = start_date + timedelta(days=1)
+
+    if historical_data is not None:
+        start_datetime = pd.to_datetime(start_date)
+        end_datetime = pd.to_datetime(end_date)
+        min_price = 0
+        mask = (historical_data.index >= start_datetime) & (historical_data.index <= end_datetime)
+        relevant_data = historical_data.loc[mask, 'low']
+        if relevant_data.empty:
+            return None
+        min_price = relevant_data.min()
+        min_price_date = relevant_data.idxmin()
+        if return_date:
+            return min_price,min_price_date
+        return min_price
+
+    if return_date:
+        return None,None
+    return None
+
+
+def find_first_price_threshold(start_date, end_date, historical_data, price_threshold,loss_or_profit, return_date=False):
+    # Convert dates to datetime objects if they're strings
+    if isinstance(start_date, str):
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    elif isinstance(start_date, pd.Timestamp):
+        start_date = start_date.date()
+        
+    if isinstance(end_date, str):
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    elif isinstance(end_date, pd.Timestamp):
+        end_date = end_date.date()
+    
+    start_date = start_date + timedelta(days=1)
+    
+    if historical_data is not None:
+        start_datetime = pd.to_datetime(start_date)
+        end_datetime = pd.to_datetime(end_date)
+        
+        mask = (historical_data.index >= start_datetime) & (historical_data.index <= end_datetime)
+        
+        if loss_or_profit == 'profit':
+            relevant_data = historical_data.loc[mask, 'high']
+        elif loss_or_profit == 'loss':
+            relevant_data = historical_data.loc[mask, 'low']
+
+        if relevant_data.empty:
+            return (None, None) if return_date else None
+            
+        # Find the first date where price >= threshold
+        if loss_or_profit == 'profit':
+            threshold_mask = relevant_data >= price_threshold
+        elif loss_or_profit == 'loss':
+            threshold_mask = relevant_data <= price_threshold
+        if not threshold_mask.any():
+            return (None, None) if return_date else None
+            
+        first_threshold_date = relevant_data[threshold_mask].index[0]
+        first_threshold_price = relevant_data[threshold_mask].iloc[0]
+        
+        if return_date:
+            return first_threshold_price, first_threshold_date
+        return first_threshold_price
+    
+    if return_date:
+        return None, None
+    return None
+
+
+def safe_add(a, b):
+    if a is None or b is None:
+        return None
+    return a + b
+
+def extract_max_price_in_range(start_date, end_date,historical_data,return_date=False):
     # Convert dates to datetime objects if they're strings
     if isinstance(start_date, str):
         start_date = datetime.strptime(start_date, '%Y-%m-%d')
@@ -346,12 +455,17 @@ def extract_max_price_in_range(start_date, end_date,historical_data):
         end_datetime = pd.to_datetime(end_date)
         max_price = 0
         mask = (historical_data.index >= start_datetime) & (historical_data.index <= end_datetime)
-        relevant_data = historical_data.loc[mask, 'close']
+        relevant_data = historical_data.loc[mask, 'high']
         if relevant_data.empty:
             return None
         max_price = relevant_data.max()
+        max_price_date = relevant_data.idxmax()
+        if return_date:
+            return max_price,max_price_date
         return max_price
 
+    if return_date:
+        return None,None
     return None
 
 def extract_stock_price_at_date(date,historical_data =None,not_None=False):
@@ -422,10 +536,12 @@ def get_estimation_dict(symbol,period):
 
     return sorted_data
 
-def convert_to_dict(historic_data,parse_time=True):
+def convert_to_dicts(historic_data, parse_time=True):
     if historic_data is None:
         return None
     date_to_close = {}
+    date_to_high = {}
+    date_to_low = {}
     for entry in historic_data:
         try:
             if parse_time:
@@ -433,9 +549,11 @@ def convert_to_dict(historic_data,parse_time=True):
             else:
                 date_obj = datetime.strptime(entry['date'], '%Y-%m-%d').date()
             date_to_close[date_obj] = entry['close']
+            date_to_high[date_obj] = entry['high']
+            date_to_low[date_obj] = entry['low']
         except ValueError as e:
             print(f"Date format error in entry {entry}: {e}")
-    return date_to_close
+    return date_to_close, date_to_high, date_to_low
 
 def get_cashflow_dict(symbol,period):
     url_income = f'https://financialmodelingprep.com/api/v3/cash-flow-statement/{symbol}?period={period}&apikey={api_key}'
@@ -473,10 +591,12 @@ def get_historical_market_cap(stock):
     return sorted_data
 
 
-def convert_to_df(date_to_close):
+def convert_to_df(date_to_close,column):
     if date_to_close is None:
        return None
-    date_to_close_df = pd.DataFrame(date_to_close.items(), columns=['date', 'close'])
+    #print("date_to_close : ")
+    #print(date_to_close)
+    date_to_close_df = pd.DataFrame(date_to_close.items(), columns=['date', column])
     date_to_close_df['date'] = pd.to_datetime(date_to_close_df['date'])
     date_to_close_df.set_index('date', inplace=True)
     date_to_close_df.sort_index(inplace=True)

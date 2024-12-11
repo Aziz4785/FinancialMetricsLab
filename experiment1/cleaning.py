@@ -5,7 +5,7 @@ import random
 """
 to run : py -m experiment1.cleaning
 """
-training_data_path = 'C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/raw_data_9_in_8W.csv'
+training_data_path = 'experiment1/raw_data_40D_in_5W.csv'
 # Read the CSV file
 df = pd.read_csv(training_data_path)
 
@@ -46,7 +46,7 @@ if rows_to_remove > 0:
     df = df.drop(indices_to_remove)
 
 # Save the processed data to a new CSV file
-df.to_csv('experiment1/cleaned_data_9_in_8W.csv', index=False)
+df.to_csv('experiment1/cleaned_data_40D_in_5W.csv', index=False)
 
 print(f"Original shape: {pd.read_csv(training_data_path).shape}")
 print(f"Processed shape (before saving): {df.shape}")

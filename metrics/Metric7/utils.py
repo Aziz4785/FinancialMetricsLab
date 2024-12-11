@@ -28,26 +28,102 @@ def fetch_stock_data(stocks):
     balance_shit_dict= {}
     cashflow_dict = {}
     estimations_dict = {}
+    #old_prices_dict = {}
+    high_df={}
+    low_df={}
     sector_dict = {}
     for c, stock in enumerate(stocks):
-        historic_data = get_historical_price(stock)
-        date_to_close = convert_to_dict(historic_data)
-        hist_data_df_for_stock[stock] = convert_to_df(date_to_close)
-        historical_data_for_stock[stock] = date_to_close
-        sector_dict[stock]=get_company_sector(stock)
+        if c%100==0:
+            print(c)
+        historic_data = get_very_old_price(stock)
+        if historic_data is not None and "historical" in historic_data:
+            #old_prices_dict[stock]=convert_to_dicts(historic_data["historical"],parse_time=False)
+            date_to_close,high_dict,low_dict = convert_to_dicts(historic_data["historical"],parse_time=False)
+            hist_data_df_for_stock[stock] = convert_to_df(date_to_close,'close')
+            high_df[stock] = convert_to_df(high_dict,'high')
+            low_df[stock] = convert_to_df(low_dict,'low')
+            historical_data_for_stock[stock] = date_to_close
+
+        else:
+            hist_data_df_for_stock[stock] = None
+            high_df[stock] = None
+            low_df[stock] = None
+            historical_data_for_stock[stock] = None
+        
         market_cap_dict[stock] = get_historical_market_cap(stock)
         revenues_dict[stock] = get_income_dict(stock,'quarter')
         balance_shit_dict[stock] = get_balance_shit(stock,'quarter')
         cashflow_dict[stock]= get_cashflow_dict(stock,'quarter')
         estimations_dict[stock] = get_estimation_dict(stock,'quarter')
+        sector_dict[stock]=get_company_sector(stock)
         if estimations_dict[stock] is None:
             print("estimations dict is none for : ",stock)
         if c % 40==0 and c > 0:
-            print(c)
             print("we sleep")
             time.sleep(50)
 
-    return historical_data_for_stock, market_cap_dict, revenues_dict, hist_data_df_for_stock,balance_shit_dict,cashflow_dict,estimations_dict,sector_dict
+    return historical_data_for_stock, high_df, low_df,market_cap_dict, revenues_dict, hist_data_df_for_stock,balance_shit_dict,cashflow_dict,estimations_dict,sector_dict
+
+def convert_to_df(date_to_close,column):
+    if date_to_close is None:
+       return None
+    #print("date_to_close : ")
+    #print(date_to_close)
+    date_to_close_df = pd.DataFrame(date_to_close.items(), columns=['date', column])
+    date_to_close_df['date'] = pd.to_datetime(date_to_close_df['date'])
+    date_to_close_df.set_index('date', inplace=True)
+    date_to_close_df.sort_index(inplace=True)
+    return date_to_close_df
+
+
+def convert_to_dicts(historic_data, parse_time=True):
+    if historic_data is None:
+        return None
+    date_to_close = {}
+    date_to_high = {}
+    date_to_low = {}
+    for entry in historic_data:
+        try:
+            if parse_time:
+                date_obj = datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S').date()
+            else:
+                date_obj = datetime.strptime(entry['date'], '%Y-%m-%d').date()
+            date_to_close[date_obj] = entry['close']
+            date_to_high[date_obj] = entry['high']
+            date_to_low[date_obj] = entry['low']
+        except ValueError as e:
+            print(f"Date format error in entry {entry}: {e}")
+    return date_to_close, date_to_high, date_to_low
+
+# def fetch_stock_data(stocks):
+#     print("fetch_stock_data...")
+#     historical_data_for_stock = {}
+#     market_cap_dict = {}
+#     revenues_dict = {}
+#     hist_data_df_for_stock = {}
+#     balance_shit_dict= {}
+#     cashflow_dict = {}
+#     estimations_dict = {}
+#     sector_dict = {}
+#     for c, stock in enumerate(stocks):
+#         historic_data = get_historical_price(stock)
+#         date_to_close = convert_to_dict(historic_data)
+#         hist_data_df_for_stock[stock] = convert_to_df(date_to_close)
+#         historical_data_for_stock[stock] = date_to_close
+#         sector_dict[stock]=get_company_sector(stock)
+#         market_cap_dict[stock] = get_historical_market_cap(stock)
+#         revenues_dict[stock] = get_income_dict(stock,'quarter')
+#         balance_shit_dict[stock] = get_balance_shit(stock,'quarter')
+#         cashflow_dict[stock]= get_cashflow_dict(stock,'quarter')
+#         estimations_dict[stock] = get_estimation_dict(stock,'quarter')
+#         if estimations_dict[stock] is None:
+#             print("estimations dict is none for : ",stock)
+#         if c % 40==0 and c > 0:
+#             print(c)
+#             print("we sleep")
+#             time.sleep(50)
+
+#     return historical_data_for_stock, market_cap_dict, revenues_dict, hist_data_df_for_stock,balance_shit_dict,cashflow_dict,estimations_dict,sector_dict
 
 
 def engineer_stock_features(df):
@@ -135,15 +211,18 @@ def engineer_stock_features(df):
     return df_new
 
 def load_models():
-    with open('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric6/models/RF4a_1_16.pkl', 'rb') as model_file:
+    with open('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric7/models/RF4c_7_18.pkl', 'rb') as model_file:
         model = pickle.load(model_file)
-    with open('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric6/models/scaler_1_16.pkl', 'rb') as scaler_file:
+    with open('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric7/models/scaler_7_18.pkl', 'rb') as scaler_file:
         scaler = pickle.load(scaler_file)
-    with open('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric6/models/RF1_5_20.pkl', 'rb') as model_file:
+    with open('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric7/models/RF_4_22.pkl', 'rb') as model_file:
         model2 = pickle.load(model_file)
-    with open('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric6/models/scaler_5_20.pkl', 'rb') as scaler_file:
+    with open('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric7/models/scaler_4_22.pkl', 'rb') as scaler_file:
         scaler2 = pickle.load(scaler_file)
-    return model,scaler,model2,scaler2
+    with open('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric7/models/XGB8_4_22.pkl', 'rb') as model_file:
+        model3 = pickle.load(model_file)
+
+    return model,scaler,model2,scaler2,model3
 
 def fetch_data_for_ml(stocks):
     sma_10d_dict = {}
@@ -238,20 +317,21 @@ def add_historical_sma(df: pd.DataFrame, sma_10d_dict: Dict) -> pd.DataFrame:
     return df
 
 
-def predict_buy(model,scaler,features_for_pred,input_date,symbol,pe_ratio,price_at_date,
+def predict_buy(model,scaler,features_for_pred,input_date,symbol,param_from_simul,price_at_date,
                                                                   sma_10d_dict,sma_50w_dict,sma_100d_dict ,sma_200d_dict ,sma_50d_dict,
-                                                                  income_features,market_cap,cashflow_features,estimations_features,balance_features,hist_data_df_for_stock):
-
+                                                                  income_features,market_cap,cashflow_features,estimations_features,balance_features,hist_data_df_for_stock,high_df,low_df):
     if hist_data_df_for_stock is None:
         return None,None   
-    max_in_8M, max8M_date = extract_max_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(months=8)).date(),input_date,hist_data_df_for_stock,return_date=True)
-    max_in_4M, max4M_date = extract_max_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(months=4)).date(),input_date,hist_data_df_for_stock,return_date=True)
-    min_in_4M, min4M_date = extract_min_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(months=4)).date(),input_date,hist_data_df_for_stock,return_date=True)
-    max_in_1M,max1M_date=extract_max_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(months=1)).date(),input_date,hist_data_df_for_stock,return_date=True)
-    min_in_8M, min8M_date = extract_min_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(months=8)).date(),input_date,hist_data_df_for_stock,return_date=True)
-    max_in_2W, max2W_date = extract_max_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(weeks=2)).date(),input_date,hist_data_df_for_stock,return_date=True)
+    max_in_8M, max8M_date = extract_max_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(months=8)).date(),input_date,high_df,return_date=True)
+    max_in_4M, max4M_date = extract_max_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(months=4)).date(),input_date,high_df,return_date=True)
+    min_in_4M, min4M_date = extract_min_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(months=4)).date(),input_date,low_df,return_date=True)
+    max_in_1M,max1M_date=extract_max_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(months=1)).date(),input_date,high_df,return_date=True)
+    min_in_8M, min8M_date = extract_min_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(months=8)).date(),input_date,low_df,return_date=True)
+    max_in_2W, max2W_date = extract_max_price_in_range((pd.to_datetime(input_date) - pd.DateOffset(weeks=2)).date(),input_date,high_df,return_date=True)
     min8M_lag = (pd.to_datetime(input_date) - pd.to_datetime(min8M_date)).days
     min4M_lag= (pd.to_datetime(input_date) - pd.to_datetime(min4M_date)).days
+    max8M_lag = (pd.to_datetime(input_date) - pd.to_datetime(max8M_date)).days
+    max4M_lag= (pd.to_datetime(input_date) - pd.to_datetime(max4M_date)).days
     curr_est_eps = safe_dict_get(estimations_features,'current_estimated_eps')
     pe = safe_divide(price_at_date,curr_est_eps)
     eps_growth = safe_divide(safe_subtract(safe_dict_get(estimations_features,'future_estimated_eps'),safe_dict_get(estimations_features,'current_estimated_eps')),safe_dict_get(estimations_features,'current_estimated_eps'))
@@ -264,6 +344,10 @@ def predict_buy(model,scaler,features_for_pred,input_date,symbol,pe_ratio,price_
     fwdPriceTosale=safe_divide(market_cap,safe_dict_get(estimations_features,'future_estim_rev'))
     markRevRAtio  = safe_divide(market_cap,safe_dict_get(income_features,'revenue'))
     revenues = safe_dict_get(income_features,'revenue')
+    totalDebt = safe_dict_get(balance_features,'totalDebt')
+    netDebt= safe_dict_get(balance_features,'netDebt')
+    dividendpaid = safe_dict_get(cashflow_features,'dividendsPaid')
+    netincome =  safe_dict_get(income_features,'netIncome')
     if(isinstance(sma_100d_dict, list)):
         sma100d = extract_SMA(input_date,sma_100d_dict)
         sma50d = extract_SMA(input_date,sma_50d_dict)
@@ -274,6 +358,8 @@ def predict_buy(model,scaler,features_for_pred,input_date,symbol,pe_ratio,price_
         sma_10d_6mago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=6)).date(), sma_10d_dict)
         sma_10d_2months_ago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=2)).date(), sma_10d_dict)
         sma_10d_3mago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=3)).date(), sma_10d_dict)
+        sma_10d_4mago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=4)).date(), sma_10d_dict)
+        sma_10d_5mago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=5)).date(), sma_10d_dict)
     else:
         sma100d = extract_SMA(input_date,sma_100d_dict[symbol])
         sma50d = extract_SMA(input_date,sma_50d_dict[symbol])
@@ -284,31 +370,45 @@ def predict_buy(model,scaler,features_for_pred,input_date,symbol,pe_ratio,price_
         sma_10d_6mago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=6)).date(), sma_10d_dict[symbol])
         sma_10d_2months_ago = extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=2)).date(), sma_10d_dict[symbol])
         sma_10d_3mago= extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=3)).date(), sma_10d_dict[symbol])
+        sma_10d_4mago= extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=4)).date(), sma_10d_dict[symbol])
+        sma_10d_5mago= extract_SMA((pd.to_datetime(input_date) - pd.DateOffset(months=5)).date(), sma_10d_dict[symbol])
     #[  'max_in_2W',  'fwdPriceTosale_diff']
     feature_calculations = {
-        'pe_ratio': lambda: pe_ratio,
+        'est_eps_growth': lambda: param_from_simul,
         'month': lambda:pd.to_datetime(input_date).month,
         'curr_est_eps': lambda: curr_est_eps,
-        'netIncome': lambda: safe_dict_get(income_features,'netIncome'),
+        'netIncome': lambda: netincome,
         'RnD_expenses': lambda: safe_dict_get(income_features,'researchAndDevelopmentExpenses'),
         'sma_50w': lambda: sma_50w,
         'sma_50d': lambda: sma50d,
         'sma_200d': lambda: sma_200d,
         'sma_100d': lambda: sma100d,
         'sma_10d': lambda: sma10d,
+        'debtToPrice': lambda: safe_divide(totalDebt,market_cap),
+        'netDebtToPrice': lambda: safe_divide(netDebt,market_cap),
+        'dividend_payout_ratio': lambda: safe_divide(dividendpaid,netincome),
+        'sma_10d_4months_ago': lambda : sma_10d_4mago,
+        'sma_10d_6months_ago': lambda : sma_10d_6mago,
+        'cashcasheq': lambda : safe_dict_get(balance_features,'cashAndCashEquivalents'),
         'price': lambda: price_at_date,
         'max_minus_min': lambda: safe_subtract(max_in_4M,min_in_4M),
         'dist_min8M_4M': lambda: safe_subtract(min8M_lag,min4M_lag),
-        'dividendsPaid': lambda : safe_dict_get(cashflow_features,'dividendsPaid'),
+        'dividendsPaid': lambda : dividendpaid,
         'marketCap': lambda: market_cap,
         'GP': lambda: gp,
         'ebitdaMargin' : lambda: safe_divide(ebitda,revenues),
         'PS_to_PEG':lambda: safe_divide(peg,markRevRAtio),
         'revenues': lambda: safe_dict_get(income_features,'revenue'),
         'EV': lambda: EV,
+        'dist_max8M_4M': lambda: safe_subtract(max8M_lag,max4M_lag),
         'sma10_yoy_growth': lambda: safe_multiply(safe_subtract(safe_divide(sma10d,sma_10d_11mago),1), 100),
         'deriv_2m': lambda:safe_divide(safe_subtract(price_at_date,sma_10d_2months_ago),2),
+        'deriv_4m': lambda:safe_divide(safe_subtract(price_at_date,sma_10d_4mago),4),
+        'deriv_5m': lambda:safe_divide(safe_subtract(price_at_date,sma_10d_5mago),5),
+        'deriv_6m': lambda:safe_divide(safe_subtract(price_at_date,sma_10d_6mago),6),
+        'deriv_min8M':lambda: safe_divide(safe_subtract(price_at_date,min_in_8M),min8M_lag),
         'sma_100d_to_sma_200d_ratio': lambda : safe_subtract(safe_divide(sma100d, sma_200d), 1),
+        'sma_50d_to_sma_200d_ratio': lambda : safe_subtract(safe_divide(sma50d, sma_200d), 1),
         'price_to_sma_200d_ratio': lambda :safe_subtract(safe_divide(price_at_date, sma_200d), 1),
         'max_in_8M': lambda: max_in_8M,
         'maxPercen_4M': lambda: safe_divide(safe_subtract(max_in_4M,price_at_date),price_at_date),
@@ -615,41 +715,6 @@ def extract_current_and_future_estim_eps(today_date, sorted_data):
                 break
     return current_estimated_eps, future_estimated_eps
 
-def calculate_revenue_growth(input_date,estimations_data):
-    def ensure_datetime(date_value):
-        if isinstance(date_value, str):
-            return datetime.strptime(date_value, "%Y-%m-%d")
-        elif isinstance(date_value, pd.Timestamp):
-            return date_value.to_pydatetime()
-        elif isinstance(date_value, date):
-            return datetime.combine(date_value, datetime.min.time())
-        elif isinstance(date_value, datetime):
-            return date_value
-        else:
-            raise ValueError(f"Unsupported date type: {type(date_value)}")
-
-    if estimations_data is None:
-        return None
-    input_date = ensure_datetime(input_date)
-    
-    current_estimated_eps = None
-    future_estimated_eps = None
-    current_estim_rev = None
-    future_estim_rev = None
-
-    for i, entry in enumerate(estimations_data):
-        if entry is not None:
-            entry_date = ensure_datetime(entry['date'])
-
-            if entry_date <= input_date:
-                current_estim_rev = entry['estimatedRevenueAvg']       
-                if i > 0:
-                    future_estim_rev = estimations_data[i-1]['estimatedRevenueAvg']
-                break
-    if current_estim_rev is not None and future_estim_rev is not None and current_estim_rev!=0:
-        return (future_estim_rev-current_estim_rev)/current_estim_rev
-    return None
-
 def calculate_div_payout_ratio(input_date,cashflow_data,income_data):
     div_paid = extract_dividend_paid(input_date,cashflow_data)
     net_income = extract_net_inome(input_date,income_data)
@@ -818,7 +883,7 @@ def extract_min_price_in_range(start_date, end_date,historical_data,return_date=
         end_datetime = pd.to_datetime(end_date)
         max_price = 0
         mask = (historical_data.index >= start_datetime) & (historical_data.index <= end_datetime)
-        relevant_data = historical_data.loc[mask, 'close']
+        relevant_data = historical_data.loc[mask, 'low']
         if relevant_data.empty:
             #print("  relevant_data is empty")
             return None
@@ -850,7 +915,7 @@ def extract_max_price_in_range(start_date, end_date,historical_data,return_date=
         end_datetime = pd.to_datetime(end_date)
         max_price = 0
         mask = (historical_data.index >= start_datetime) & (historical_data.index <= end_datetime)
-        relevant_data = historical_data.loc[mask, 'close']
+        relevant_data = historical_data.loc[mask, 'high']
         if relevant_data.empty:
             if return_date == True:
                 return None,None
@@ -883,33 +948,7 @@ def extract_stock_price_at_date(date,historical_data =None,not_None=False):
         return historical_data.get(date)
     else:
        return None
-    
 
-def calculate_sector_relatives(df, sector_column):
-    """
-    Calculate sector-relative metrics (requires a sector column in the data)
-    
-    Parameters:
-    df (pd.DataFrame): DataFrame with stock features
-    sector_column (str): Name of the column containing sector information
-    
-    Returns:
-    pd.DataFrame: DataFrame with additional sector-relative features
-    """
-    df_new = df.copy()
-    
-    # Metrics to calculate sector-relatives for
-    metrics = ['pe','peg', 'EVGP','EVRevenues','markRevRatio', 'fwdPriceTosale_diff','EVEbitdaRatio', '3M_return','6M_return','1W_return','1M_return','2M_return','4M_return','5M_return','1y_return','6M_return','7M_return','max_minus_min', 'deriv_3m', 'deriv_4m',]
-    
-    # Calculate sector-relative metrics
-    for metric in metrics:
-        if metric in df.columns:
-            # Calculate sector means
-            sector_means = df.groupby(sector_column)[metric].transform('mean')
-            # Calculate sector-relative metric
-            df_new[f'{metric}_sector_relative'] = df[metric] / sector_means - 1
-    
-    return df_new
  
 
 

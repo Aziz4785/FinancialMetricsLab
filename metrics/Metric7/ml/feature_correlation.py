@@ -4,17 +4,17 @@ import numpy as np
 
 
 """
-to run : py -m metrics.Metric6.ml.feature_correlation
+to run : py -m metrics.Metric7.ml.feature_correlation
 """
 
 
-feature_importance = ['price', 'month', 'RnD_expenses', 'revenues', 'GP', 'dividendsPaid',
-       'curr_est_eps', 'EV', 'min_in_4M', 'max_minus_min', 'max_in_8M',
-       'dist_min8M_4M', 'ebitdaMargin', 'eps_growth', 'peg', 'PS_to_PEG',
-       'fwdPriceTosale_diff', 'var_sma50D_100D', '1Y_6M_growth',
-       'combined_valuation_score']
+feature_importance = ['price', 'sma_200d', 'sma_50d', 'sma_10d_3months_ago',
+'sma_10d_4months_ago', 'sma_10d_6months_ago', 'marketCap', 'EV',
+'max_minus_min8M', 'debtToPrice', 'pe', 'peg', 'netDebtToPrice',
+'EVEbitdaRatio', 'EVGP', 'var_sma50D_200D', 'deriv_4m', 'deriv_6m',
+'combined_valuation_score']
 
-df = pd.read_csv('metrics/Metric6/ml/processed_data.csv')
+df = pd.read_csv('metrics/Metric7/ml/processed_data.csv')
 
 X = df.drop(columns=['symbol', 'date', 'to_buy'])
 X= df[feature_importance].drop(columns=[])
@@ -24,7 +24,7 @@ print(X.columns)
 correlation_matrix = X.corr().abs()
 
 # Find highly correlated features
-threshold = 0.992
+threshold = 0.99
 high_corr_features = np.where(correlation_matrix > threshold)
 high_corr_features = [(correlation_matrix.index[x], correlation_matrix.columns[y], correlation_matrix.iloc[x, y])
                       for x, y in zip(*high_corr_features) if x != y and x < y]

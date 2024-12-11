@@ -3,9 +3,10 @@ import random
 #from ..utils import *
 
 """
-to run : py -m metrics.Metric6.ml.data_cleaning
+to run : py -m metrics.Metric7.ml.data_cleaning
 """
-training_data_path = 'C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric6/ml/training_data_raw.csv'
+
+training_data_path = 'metrics/Metric7/ml/training_data_raw.csv'
 # Read the CSV file
 df = pd.read_csv(training_data_path)
 
@@ -21,7 +22,7 @@ df = df.dropna()
 
 
 # Save the processed data to a new CSV file
-df.to_csv('metrics/Metric6/cleaned_training_data.csv', index=False)
+df.to_csv('metrics/Metric7/ml/cleaned_training_data.csv', index=False)
 
 print(f"Original shape: {pd.read_csv(training_data_path).shape}")
 print(f"Processed shape: {df.shape}")

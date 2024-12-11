@@ -594,41 +594,6 @@ def extract_current_and_future_estim_eps(today_date, sorted_data):
                 break
     return current_estimated_eps, future_estimated_eps
 
-def calculate_revenue_growth(input_date,estimations_data):
-    def ensure_datetime(date_value):
-        if isinstance(date_value, str):
-            return datetime.strptime(date_value, "%Y-%m-%d")
-        elif isinstance(date_value, pd.Timestamp):
-            return date_value.to_pydatetime()
-        elif isinstance(date_value, date):
-            return datetime.combine(date_value, datetime.min.time())
-        elif isinstance(date_value, datetime):
-            return date_value
-        else:
-            raise ValueError(f"Unsupported date type: {type(date_value)}")
-
-    if estimations_data is None:
-        return None
-    input_date = ensure_datetime(input_date)
-    
-    current_estimated_eps = None
-    future_estimated_eps = None
-    current_estim_rev = None
-    future_estim_rev = None
-
-    for i, entry in enumerate(estimations_data):
-        if entry is not None:
-            entry_date = ensure_datetime(entry['date'])
-
-            if entry_date <= input_date:
-                current_estim_rev = entry['estimatedRevenueAvg']       
-                if i > 0:
-                    future_estim_rev = estimations_data[i-1]['estimatedRevenueAvg']
-                break
-    if current_estim_rev is not None and future_estim_rev is not None and current_estim_rev!=0:
-        return (future_estim_rev-current_estim_rev)/current_estim_rev
-    return None
-
 def calculate_div_payout_ratio(input_date,cashflow_data,income_data):
     div_paid = extract_dividend_paid(input_date,cashflow_data)
     net_income = extract_net_inome(input_date,income_data)

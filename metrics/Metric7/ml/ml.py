@@ -27,7 +27,7 @@ from sklearn.ensemble import (
 
 
 """
-to run : py -m metrics.Metric6.ml.ml
+to run : py -m metrics.Metric7.ml.ml
 
 YOU MUST SELECT MANY MODELS (with different architecture and different input features)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -53,38 +53,47 @@ recall = tp/(tp+fn)
 SAVE_MODEL = True
 folder = 'allmodels'
 os.makedirs(folder, exist_ok=True)
-df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric6/ml/processed_data.csv')
+df = pd.read_csv('metrics/Metric7/ml/processed_data.csv')
 df = df.sample(frac=1).reset_index(drop=True)
 df = df.drop(['date', 'symbol'], axis=1)
 
 
 feature_subsets = [
-    ['price', 'sma_100d', 'pe', 'peg', 'EVGP', '1Y_6M_growth']
+    ['sma_50w', 'sma_200d', 'marketCap', 'netDebtToPrice', 'EVEbitdaRatio',
+       'deriv_6m'],
 
-    ,['price', 'sma_100d', 'RnD_expenses', 'EV', 'maxPercen_4M', 'max_in_2W',
-        'pe', 'peg', 'EVEbitdaRatio', 'EVGP', 'fwdPriceTosale',
-        'fwdPriceTosale_diff', '3M_2M_growth', '1Y_6M_growth',
-        'combined_valuation_score', 'sma10_yoy_growth']
+['sma_200d', 'marketCap', 'peg', 'netDebtToPrice', 'EVEbitdaRatio',
+       'deriv_6m'],
+['sma_200d', 'sma_10d_6months_ago', 'marketCap', 'peg', 'netDebtToPrice',
+       'EVEbitdaRatio', 'EVGP', 'deriv_6m'],
 
-    ,['price', 'pe_ratio', 'sma_100d', 'RnD_expenses', 'marketCap', 'EV',
-        'maxPercen_4M', 'max_in_2W', 'pe', 'peg', 'EVEbitdaRatio', 'EVGP',
-        'fwdPriceTosale', 'fwdPriceTosale_diff', '3M_2M_growth', '1Y_6M_growth',
-        'combined_valuation_score', 'sma10_yoy_growth']
+['sma_200d', 'sma_50d', 'sma_10d_4months_ago', 'sma_10d_6months_ago',
+       'marketCap', 'EV', 'max_minus_min8M', 'debtToPrice', 'peg',
+       'netDebtToPrice', 'EVEbitdaRatio', 'EVGP', 'deriv_4m', 'deriv_6m',
+       'sma_50d_to_sma_200d_ratio', 'combined_valuation_score'],
 
-    ,['RnD_expenses', 'revenues', 'GP', 'max_in_8M', 'ebitdaMargin',
-       'eps_growth']
+['price', 'sma_100d', 'sma_200d', 'sma_50d', 'sma_10d_4months_ago',
+       'sma_10d_6months_ago', 'marketCap', 'EV', 'max_minus_min8M',
+       'debtToPrice', 'pe', 'peg', 'netDebtToPrice', 'dividend_payout_ratio',
+       'EVEbitdaRatio', 'EVGP', 'deriv_4m', 'deriv_5m', 'deriv_6m',
+       'sma_50d_to_sma_200d_ratio', 'combined_valuation_score',
+       'sma10_yoy_growth'],
 
-    ,['price', 'month', 'RnD_expenses', 'revenues', 'GP', 'curr_est_eps',
-        'min_in_4M', 'max_minus_min', 'max_in_8M', 'dist_min8M_4M',
-        'ebitdaMargin', 'eps_growth', 'peg', 'PS_to_PEG', '1Y_6M_growth',
-        'combined_valuation_score']
+       ['price', 'est_eps_growth', 'GP', 'netIncome', 'cashcasheq', 'EV',
+       'dist_max8M_4M', 'netDebtToPrice', 'dividend_payout_ratio',
+       'fwdPriceTosale_diff'],
 
-    ,['price', 'month', 'RnD_expenses', 'revenues', 'GP', 'dividendsPaid',
-        'curr_est_eps', 'EV', 'min_in_4M', 'max_minus_min', 'max_in_8M',
-        'dist_min8M_4M', 'ebitdaMargin', 'eps_growth', 'peg', 'PS_to_PEG',
-        'fwdPriceTosale_diff', 'var_sma50D_100D', '1Y_6M_growth',
-        'combined_valuation_score'],
+['price', 'est_eps_growth', 'sma_200d', 'GP', 'netIncome', 'marketCap',
+       'cashcasheq', 'EV', 'dist_max8M_4M', 'netDebtToPrice',
+       'dividend_payout_ratio', 'EVGP', 'fwdPriceTosale_diff', 'deriv_6m'],
 
+['price', 'est_eps_growth', 'sma_100d', 'sma_200d', 'month', 'GP',
+       'netIncome', 'marketCap', 'cashcasheq', 'EV', 'dist_max8M_4M',
+       'markRevRatio', 'netDebtToPrice', 'dividend_payout_ratio', 'EVGP',
+       'fwdPriceTosale_diff', 'deriv_6m', 'deriv_min8M'],
+['price', 'sma_100d', 'RnD_expenses', 'EV', 'maxPercen_4M', 'max_in_2W', 'pe', 'peg', 'EVEbitdaRatio', 'EVGP', 'fwdPriceTosale', 'fwdPriceTosale_diff', '3M_2M_growth', '1Y_6M_growth', 'combined_valuation_score', 'sma10_yoy_growth'],
+['price', 'month', 'RnD_expenses', 'revenues', 'GP', 'dividendsPaid', 'curr_est_eps', 'EV', 'min_in_4M', 'max_minus_min', 'max_in_8M', 'dist_min8M_4M', 'ebitdaMargin', 'eps_growth', 'peg', 'PS_to_PEG', 'fwdPriceTosale_diff', 'var_sma50D_100D', '1Y_6M_growth', 'combined_valuation_score'],
+['EVEbitdaRatio', 'sma_200d', 'sma_50d', 'marketCap', 'markRevRatio', 'EVRevenues', 'fwdPriceTosale', 'deriv_2m', '1Y_6M_growth', 'sma_100d_to_sma_200d_ratio', 'combined_valuation_score', 'sma10_yoy_growth']
 ]
 
 

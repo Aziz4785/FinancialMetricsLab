@@ -1,1 +1,11 @@
-dividend_payout_ratio>=-0.08 and e_current_estimated_eps<=-0.07
+dividend_payout_ratio>=-0.08 and e_current_estimated_eps<=-0.07 (for 9 in 8W)
+
+(for 9 in 10W)
+c_freeCashFlow >= 282972500.00 ou 707000000.00 AND est_rev_growth >= 0.05 
+c_freeCashFlow >= 282972500.00  AND est_eps_growth >= 0.11 
+c_freeCashFlow >= 282972500.00  AND FUTURE8ESTIMATED8EPS >= 2.36 
+c_freeCashFlow >= 282972500.00  AND OTHEREXPENSES <=-6000000.00
+c_freeCashFlow >= 282972500.00  AND est_eps_growth >=0.11
+i_grossProfit>=2796200000.00 (0.002)
+ebitda>136361504 and 3.091>=pegRatio>-0.371
+0.03>fcf_yield>0.01

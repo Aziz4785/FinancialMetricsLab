@@ -13,6 +13,7 @@ NBR_OF_SIMULATION = 500
 WAITING_IN_WEEKS = 8
 GOOD_RETURN = 0.09
 BAD_RETURN = 0.5
+#STOP_LOSS_EUROS = 50
 if 'df_results' not in locals():
     df_results = pd.DataFrame()
 

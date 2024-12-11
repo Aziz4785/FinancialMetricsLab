@@ -11,11 +11,11 @@ to run : py -m experiment1.experiment2
 SHOW_FEATURE_IMPORTANCE = False
 DEPTH = 2
 
-df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/cleaned_data_14_in_7W.csv')
-MIN_SAMPLE_LEAFS = 800#int(0.1*len(df))
+df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/experiment1/cleaned_data_9_in_10W.csv')
+MIN_SAMPLE_LEAFS = 500#int(0.1*len(df))
 
 # Prepare features (X) and target (y)
-exclude_columns = ['target', 'stock', 'date','1Y_return','6M_return']
+exclude_columns = ['target', 'stock', 'date']
 feature_columns = [col for col in df.columns if col not in exclude_columns]
 
 X = df[feature_columns]
@@ -25,7 +25,7 @@ y = df['target']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Create and train the decision tree with max_depth=1
-dt = DecisionTreeClassifier(max_depth=DEPTH,min_samples_leaf=MIN_SAMPLE_LEAFS)
+dt = DecisionTreeClassifier(max_depth=DEPTH,min_samples_leaf=MIN_SAMPLE_LEAFS)#,class_weight={0: 1, 1: 2})
 dt.fit(X_train, y_train)
 
 # Calculate and print accuracy

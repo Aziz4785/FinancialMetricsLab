@@ -4,6 +4,9 @@ from requests.exceptions import Timeout ,ConnectionError,RequestException
 import requests
 import os
 import random
+import json
+import pickle
+from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -17,16 +20,42 @@ def load_stocks(nbr,path='sp500_final.csv'):
     return stocks
 
 
+
+def get_very_old_price(symbol):
+    url_price = f'https://financialmodelingprep.com/api/v3/historical-price-full/{symbol}?from=2018-01-01&to=2024-12-10&apikey={api_key}'
+    try:
+        response = requests.get(url_price, timeout=2)  # Increased timeout to 2 seconds
+        response.raise_for_status()  # Raises an HTTPError for bad responses
+    except Timeout:
+        print(f"Request timed out for symbol {symbol}")
+        return None
+    except ConnectionError:
+        print(f"Connection error occurred for symbol {symbol}")
+        return None
+    except RequestException as e:
+        print(f"An error occurred while fetching data for symbol {symbol}: {str(e)}")
+        return None
+
+    try:
+        data_price = response.json()
+    except json.JSONDecodeError:
+        print(f"Failed to decode JSON for symbol {symbol}. Response content: {response.text[:200]}...")
+        return None
+
+    return data_price
+
 def unique_stocks_threshold(nbr_stocks,nbr_dates):
     if abs(nbr_stocks-250)<=3 and abs(nbr_dates-500)<=3:
-        return 14,31
-    elif abs(nbr_stocks-200)<=3 and nbr_dates==500:
-        return 12,29
+        return 16,50
+    elif abs(nbr_stocks-200)<=3 and abs(nbr_dates-500)<=3:
+        return 12,40
     elif nbr_stocks==500 and nbr_dates==1000:
-        return 40,60
+        return 42,60
+    elif abs(nbr_stocks-150)<=3 and abs(nbr_dates-500)<=3:
+        return 10,30
     elif nbr_stocks==100 and nbr_dates==100:
-        return 8,11
-    return 14,31
+        return 9,20
+    return 15,31
 
 
 def convert_to_dict(historic_data):
@@ -128,6 +157,68 @@ def safe_multiply(a, b):
     return a * b
 
 
+def calculate_growthpotential_ratio(rd_expenses, free_cash_flow, revenue):
+    try:
+        if any(x is None for x in [rd_expenses, free_cash_flow, revenue]):
+            return None
+            
+        if revenue == 0:
+            return None
+            
+        numerator = rd_expenses + free_cash_flow
+        return numerator / revenue
+        
+    except (TypeError, ZeroDivisionError):
+        return None
+
+
+def find_first_price_threshold(start_date, end_date, historical_data, price_threshold,loss_or_profit, return_date=False):
+    # Convert dates to datetime objects if they're strings
+    if isinstance(start_date, str):
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    elif isinstance(start_date, pd.Timestamp):
+        start_date = start_date.date()
+        
+    if isinstance(end_date, str):
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    elif isinstance(end_date, pd.Timestamp):
+        end_date = end_date.date()
+    
+    start_date = start_date + timedelta(days=1)
+    
+    if historical_data is not None:
+        start_datetime = pd.to_datetime(start_date)
+        end_datetime = pd.to_datetime(end_date)
+        
+        mask = (historical_data.index >= start_datetime) & (historical_data.index <= end_datetime)
+        
+        if loss_or_profit == 'profit':
+            relevant_data = historical_data.loc[mask, 'high']
+        elif loss_or_profit == 'loss':
+            relevant_data = historical_data.loc[mask, 'low']
+
+        if relevant_data.empty:
+            return (None, None) if return_date else None
+            
+        # Find the first date where price >= threshold
+        if loss_or_profit == 'profit':
+            threshold_mask = relevant_data >= price_threshold
+        elif loss_or_profit == 'loss':
+            threshold_mask = relevant_data <= price_threshold
+        if not threshold_mask.any():
+            return (None, None) if return_date else None
+            
+        first_threshold_date = relevant_data[threshold_mask].index[0]
+        first_threshold_price = relevant_data[threshold_mask].iloc[0]
+        
+        if return_date:
+            return first_threshold_price, first_threshold_date
+        return first_threshold_price
+    
+    if return_date:
+        return None, None
+    return None
+
 def calculate_EV(mc,balance_features,income_features):
     if balance_features is None or income_features is None:
         return None
@@ -139,7 +230,7 @@ def calculate_EV(mc,balance_features,income_features):
     return mc+total_debt-cashncasheq
 
 def get_historical_price(symbol):
-    url_price = f'https://financialmodelingprep.com/api/v3/historical-chart/1day/{symbol}?from=2019-08-08&to=2024-11-27&apikey={api_key}'
+    url_price = f'https://financialmodelingprep.com/api/v3/historical-chart/1day/{symbol}?from=2019-08-08&to=2024-12-04&apikey={api_key}'
     try:
         response = requests.get(url_price, timeout=2)  # Increased timeout to 2 seconds
         response.raise_for_status()  # Raises an HTTPError for bad responses
@@ -176,7 +267,7 @@ def extract_market_cap(date,sorted_data):
     if sorted_data==None:
         return None
     
-    min_date = date - timedelta(days=3)
+    min_date = date - timedelta(days=2)
 
     for entry in sorted_data:
         entry_date = datetime.strptime(entry['date'].split()[0], "%Y-%m-%d").date()
@@ -185,6 +276,77 @@ def extract_market_cap(date,sorted_data):
     
     return None
 
+
+def save_market_cap_dict(stored_mc_dict, save_format='json', filepath=None):
+    """
+    Save the market cap dictionary to a file.
+    
+    Args:
+        stored_mc_dict (dict): Dictionary containing market cap data
+        save_format (str): Format to save the data in ('json' or 'pickle')
+        filepath (str, optional): Custom filepath to save to. If None, generates default name
+    
+    Returns:
+        str: Path where the file was saved
+    """
+    if filepath is None:
+        # Generate default filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filepath = f'market_cap_data.{save_format}'
+    
+    # Convert datetime objects to strings if using JSON
+    if save_format == 'json':
+        # Create a copy to avoid modifying the original
+        processed_dict = {}
+        for stock, dates in stored_mc_dict.items():
+            processed_dict[stock] = {
+                date.strftime("%Y-%m-%d") if isinstance(date, datetime) else str(date): value
+                for date, value in dates.items()
+            }
+        
+        with open(filepath, 'w') as f:
+            json.dump(processed_dict, f, indent=4)
+    
+    elif save_format == 'pickle':
+        with open(filepath, 'wb') as f:
+            pickle.dump(stored_mc_dict, f)
+    
+    else:
+        raise ValueError("save_format must be either 'json' or 'pickle'")
+    
+    return filepath
+
+def load_stored_dict(filepath, file_format=None):
+    if not os.path.exists(filepath):
+        print(f"File {filepath} not found. Creating new empty dictionary.")
+        return {}
+        
+    if file_format is None:
+        file_format = Path(filepath).suffix[1:]  # Remove the dot from extension
+    
+    try:
+        if file_format == 'json':
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+                # Convert string dates back to datetime objects
+                processed_dict = {}
+                for stock, dates in data.items():
+                    processed_dict[stock] = {
+                        datetime.strptime(date, "%Y-%m-%d"): value
+                        for date, value in dates.items()
+                    }
+                return processed_dict
+        
+        elif file_format == 'pickle':
+            with open(filepath, 'rb') as f:
+                return pickle.load(f)
+        
+        else:
+            raise ValueError("file_format must be either 'json' or 'pickle'")
+            
+    except (json.JSONDecodeError, pickle.UnpicklingError) as e:
+        print(f"Error reading file {filepath}: {str(e)}. Creating new empty dictionary.")
+        return {}
 def get_company_sector(stock):
     url = f'https://financialmodelingprep.com/api/v3/profile/{stock}?apikey={api_key}'
 
@@ -356,7 +518,8 @@ def extract_cashflow_features(input_date,sorted_cashflow_data):
                 "dividendsPaid": entry["dividendsPaid"],
                 "otherFinancingActivites": entry["otherFinancingActivites"],
                 "operatingCashFlow": entry['operatingCashFlow'],
-                "capitalExpenditure": entry['capitalExpenditure']
+                "capitalExpenditure": entry['capitalExpenditure'],
+                "netCashProvidedByOperatingActivities": entry['netCashProvidedByOperatingActivities']
             }
     return None
 

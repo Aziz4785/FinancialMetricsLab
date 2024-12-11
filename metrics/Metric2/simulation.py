@@ -96,7 +96,6 @@ def simulation():
 
             pr_ratio = calculate_historical_price_to_revenue_ratio(random_date,market_cap,income_features)
             #ev_ebitda = calculate_evebitda(random_date,market_cap_dict[stock],balance_dict[stock],income_dict[stock])
-            #revenue_est_growth = calculate_revenue_growth(random_date,estimations_dict[stock])
             #dividendsPaid = calculate_dividendPaid(random_date,cashflow_dict[stock])
             current_estimated_eps, future_eps = extract_current_and_future_estim_eps(random_date, estimations_dict[stock])
             #future_eps = calculate_FutureEps(random_date,estimations_dict[stock])

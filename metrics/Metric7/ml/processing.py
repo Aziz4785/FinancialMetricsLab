@@ -8,13 +8,13 @@ from ...common import *
 
 
 """
-to run : to run : py -m metrics.Metric6.ml.processing
+to run : to run : py -m metrics.Metric7.ml.processing
 if there is a lot of None values at the end, re-run this script because sometimes the problem comes from the API
 """
 
 
 
-df = pd.read_csv('C:/Users/aziz8/Documents/FinancialMetricsLab/metrics/Metric6/ml/cleaned_training_data.csv', parse_dates=['date'])
+df = pd.read_csv('metrics/Metric7/ml/cleaned_training_data.csv', parse_dates=['date'])
 #df = df.sample(frac=0.1)
 
 stocks = df['symbol'].unique()
@@ -22,8 +22,7 @@ print(f"number of unique stocks : {len(stocks)}")
 if (len(stocks) <3):
     print("too few stocks ... cannot perform analysis on it")
     exit()
-
-historical_data_for_stock, market_cap_dict, income_dict, hist_data_df_for_stock,balance_dict,cashflow_dict,estimations_dict,sector_dict = fetch_stock_data(stocks)
+historical_data_for_stock,high_df,low_df, market_cap_dict, income_dict, hist_data_df_for_stock,balance_dict,cashflow_dict,estimations_dict ,sector_dict= fetch_stock_data(stocks)
 sma_10d_dict,sma_50w_dict,sma_100d_dict,sma_200d_dict,sma_50d_dict,_,_,std_10d_dict = fetch_data_for_ml(stocks)
 
 df['sma_10d'] = df.apply(lambda row: extract_SMA(row['date'],sma_10d_dict[row['symbol']]), axis=1)
@@ -106,10 +105,10 @@ df['curr_est_rev'], df['future_est_rev'] = zip(*[
 df['EV'] = df.apply(lambda row: row['marketCap']+row['total_debt']-row['cashcasheq'], axis=1)
 
 print("-------fundamental metrics done----------")
-results_max4M = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=4)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+results_max4M = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=4)).date(),row['date'],high_df[row['symbol']],return_date=True), axis=1)
 df['max_in_4M'], df['max4M_date'] = zip(*[(None, None) if result is None else result for result in results_max4M])
 df['max4M_lag']=df.apply(lambda row: (pd.to_datetime(row['date']) - pd.to_datetime(row['max4M_date'])).days, axis=1)
-results_min4M = df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=4)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+results_min4M = df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=4)).date(),row['date'],low_df[row['symbol']],return_date=True), axis=1)
 df['min_in_4M'], df['min4M_date'] = zip(*[(None, None) if result is None else result for result in results_min4M])
 df['min4M_lag']=df.apply(lambda row: (pd.to_datetime(row['date']) - pd.to_datetime(row['min4M_date'])).days, axis=1)
 df = df.drop('min4M_date', axis=1)
@@ -125,10 +124,10 @@ df['maxPercen_4M'] = df.apply(lambda row:
     axis=1)
 
 
-results_max1M = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=1)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+results_max1M = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=1)).date(),row['date'],high_df[row['symbol']],return_date=True), axis=1)
 df['max_in_1M'], df['max1M_date'] = zip(*[(None, None) if result is None else result for result in results_max1M])
 df['max1M_lag']=df.apply(lambda row: (pd.to_datetime(row['date']) - pd.to_datetime(row['max1M_date'])).days, axis=1)
-results_min1M = df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=1)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+results_min1M = df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=1)).date(),row['date'],low_df[row['symbol']],return_date=True), axis=1)
 df['min_in_1M'], df['min1M_date'] = zip(*[(None, None) if result is None else result for result in results_min1M])
 df['min1M_lag']=df.apply(lambda row: (pd.to_datetime(row['date']) - pd.to_datetime(row['min1M_date'])).days, axis=1)
 df = df.drop('min1M_date', axis=1)
@@ -142,10 +141,10 @@ df['maxPercen_1M'] = df.apply(lambda row:
     axis=1)
 
 
-results_max2W = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(weeks=2)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+results_max2W = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(weeks=2)).date(),row['date'],high_df[row['symbol']],return_date=True), axis=1)
 df['max_in_2W'], df['max2W_date'] = zip(*[(None, None) if result is None else result for result in results_max2W])
 df['max2W_lag']=df.apply(lambda row: (pd.to_datetime(row['date']) - pd.to_datetime(row['max2W_date'])).days, axis=1)
-results_min2W = df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(weeks=2)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+results_min2W = df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(weeks=2)).date(),row['date'],low_df[row['symbol']],return_date=True), axis=1)
 df['min_in_2W'], df['min2W_date'] = zip(*[(None, None) if result is None else result for result in results_min2W])
 df['min2W_lag']=df.apply(lambda row: (pd.to_datetime(row['date']) - pd.to_datetime(row['min2W_date'])).days, axis=1)
 df = df.drop('min2W_date', axis=1)
@@ -160,13 +159,13 @@ df['maxPercen_2W'] = df.apply(lambda row:
     axis=1)
 
 
-results_max8M = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=8)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+results_max8M = df.apply(lambda row: extract_max_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=8)).date(),row['date'],high_df[row['symbol']],return_date=True), axis=1)
 df['max_in_8M'], df['max8M_date'] = zip(*[(None, None) if result is None else result for result in results_max8M])
 df['max8M_lag']=df.apply(lambda row: None if row['max8M_date'] is None else (pd.to_datetime(row['date']) - pd.to_datetime(row['max8M_date'])).days, axis=1)
 df['dist_max8M_4M'] = df.apply(lambda row: 
     row['max8M_lag'] - row['max4M_lag'], 
     axis=1)
-results_min8M = df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=8)).date(),row['date'],hist_data_df_for_stock[row['symbol']],return_date=True), axis=1)
+results_min8M = df.apply(lambda row: extract_min_price_in_range((pd.to_datetime(row['date']) - pd.DateOffset(months=8)).date(),row['date'],low_df[row['symbol']],return_date=True), axis=1)
 df['min_in_8M'], df['min8M_date'] = zip(*[(None, None) if result is None else result for result in results_min8M])
 df['min8M_lag']=df.apply(lambda row: None if row['min8M_date'] is None else (pd.to_datetime(row['date']) - pd.to_datetime(row['min8M_date'])).days, axis=1)
 df['dist_min8M_4M'] = df.apply(lambda row: 
@@ -243,8 +242,7 @@ df['netDebtToPrice'] = df.apply(lambda row:
     axis=1)
 
 df['dividend_payout_ratio'] = df.apply(lambda row: 
-    None if row['netIncome'] is None or row['netIncome'] == 0 
-    else row['dividendsPaid']/row['netIncome'], 
+    safe_divide(row['dividendsPaid'],row['netIncome']), 
     axis=1)
 
 df['EVEbitdaRatio'] = df.apply(lambda row: 
@@ -359,8 +357,8 @@ df['deriv_max8M'] = df.apply(lambda row: None if row['max8M_lag']is None or row[
     safe_subtract(row['price'] ,row['max_in_8M'])/row['max8M_lag'], 
     axis=1)
 
-df['deriv_min8M'] = df.apply(lambda row: None if row['min8M_lag'] is None or row['min8M_lag']==0 else
-    safe_subtract(row['price'],row['min_in_8M'])/row['min8M_lag'], 
+df['deriv_min8M'] = df.apply(lambda row:
+    safe_divide(safe_subtract(row['price'],row['min_in_8M']),row['min8M_lag']), 
     axis=1)
 
 df['deriv_1w1m_growth'] = df.apply(lambda row: 
@@ -576,4 +574,4 @@ if rows_to_remove > 0:
     df = df.drop(indices_to_remove)
 
 
-df.to_csv('metrics/Metric6/ml/processed_data.csv', index=False)
+df.to_csv('metrics/Metric7/ml/processed_data.csv', index=False)

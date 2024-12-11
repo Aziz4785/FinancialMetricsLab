@@ -11,32 +11,36 @@ run it several time with not a big number of stocks (250 is good) and pick the
 most consistent combination of parameters
 """
 
-MIN_BUDGET_BY_STOCK = 800
-TRANSACITON_FEE = 1.5
+MIN_BUDGET_BY_STOCK = 300
 
-SELL_LIMIT_PERCENTAGE_1 = 10.3
-PE_UPPER_BOUND = 20
-PE_LOWER_BOUND = -40
-GP_UPPER_BOUND = 222791500
+TAKE_PROFIT_DOLLARS = 25
+STOP_LOSS_DOLLARS = -20
+GOOD_RETURN_DOLLARS = 5
+BAD_RETURN_DOLLARS = -5
 
-NBR_OF_SIMULATION = 1000
+NBR_OF_SIMULATION = 500
 
+FREE_CF_LOWER_BOUND =282972500
+EPS_GROWTH_LOWER_BOUND =0.16 
+PE_UPPER_BOUND=51.51
+EST_REV_LOWER_BOUND =8100127380
 
 WAITING_IN_WEEKS = 10
-A_GOOD_RETURN = 0.098
-A_BAD_RETURN = 0.058
+
+
+
 GRID_SEARCH = False
-SAVE_ONLY_BAD_PRED=True
+SAVE_ONLY_BAD_PRED=False
 USE_ML = True
 DEBUG_FREQUENCY=2
-SAMPLE_SIZE = 250
-stocks = load_stocks(SAMPLE_SIZE,'C:/Users/aziz8/Documents/FinancialMetricsLab/stock_list.csv')
+SAMPLE_SIZE = 350
+stocks = load_stocks(SAMPLE_SIZE,'stock_list.csv')
 #stocks = ['F','GM','AAL','CAH','MCK','UAL','GOOG','AMZN','NVDA','DELL','HBI','KR']
-historical_data_for_stock, market_cap_dict, income_dict, hist_data_df_for_stock,balance_dict,cashflow_dict,estimations_dict,_ = fetch_stock_data(stocks)
-
+#historical_data_for_stock, market_cap_dict, income_dict, hist_data_df_for_stock,balance_dict,cashflow_dict,estimations_dict,_ = fetch_stock_data(stocks)
+historical_data_for_stock,high_df,low_df, market_cap_dict, income_dict, hist_data_df_for_stock,balance_dict,cashflow_dict,estimations_dict ,sector_dict= fetch_stock_data(stocks)
 if USE_ML:
     sma_10d_dict,sma_50w_dict,sma_100d_dict,sma_200d_dict,sma_50d_dict,_,_,_ = fetch_data_for_ml(stocks)
-    model,scaler,model2,scaler2 = load_models()
+    model,scaler,model2,scaler2,model3 = load_models()
 
 print("sleep just before simulation")
 time.sleep(30)
@@ -60,7 +64,7 @@ def simulation():
     nbr_bad=0
     nbr_total=0
     unique_stocks = set()
-    print(f"simulation( SELL_LIMIT_PERCENTAGE_1 = {SELL_LIMIT_PERCENTAGE_1} , PE_UPPER_BOUND = {PE_UPPER_BOUND}, PE_LOWER_BOUND {PE_LOWER_BOUND} ,GP_UPPER_BOUND {GP_UPPER_BOUND}")
+    print(f"simulation(  FREE_CF_LOWER_BOUND = {FREE_CF_LOWER_BOUND}, EPS_GROWTH_LOWER_BOUND {EPS_GROWTH_LOWER_BOUND} , PE_UPPER_BOUND = {PE_UPPER_BOUND} , EST_REV_LOWER_BOUND = {EST_REV_LOWER_BOUND}")
     #delta_days = (max_random_date - min_random_date).days
     for i,random_date in enumerate(random_dates):
         random_date = random_date.date()
@@ -82,7 +86,7 @@ def simulation():
                 #         print("one of the input data is None")
                 continue
             price_at_date = extract_stock_price_at_date(random_date,historical_data_for_stock[stock])
-            if price_at_date is None:
+            if price_at_date is None or price_at_date<=0.1:
                 nbr_of_None_prices+=1
                 continue
             
@@ -93,40 +97,50 @@ def simulation():
             balance_features = extract_balance_features(random_date,balance_dict[stock])
             estimations_features = extract_estimation_features(random_date,estimations_dict[stock])
             cashflow_features =extract_cashflow_features(random_date,cashflow_dict[stock])
-            pe = calculate_pe_from_features(price_at_date,income_features)
-            gp = safe_dict_get(income_features, 'grossProfit')
+            #pe = calculate_pe_from_features(price_at_date,income_features)
+            free_cf = safe_dict_get(cashflow_features, 'freeCashFlow')
+            eps = safe_dict_get(income_features, 'eps')
+            current_estimated_eps = safe_dict_get(estimations_features, 'current_estimated_eps')
+            future_eps =safe_dict_get(estimations_features, 'future_estimated_eps')
+            current_est_revenue =safe_dict_get(estimations_features, 'current_estim_rev')
             #total_asset = extract_total_asset_from_features(balance_features)
             #dividend_payout_ratio = calculate_div_payout_ratio(random_date,cashflow_dict[stock],income_dict[stock])
             #ev_ebitda = calculate_evebitda_from_features(random_date,market_cap,balance_features,income_features)
             #ev_ebitda = calculate_evebitda(random_date,market_cap_dict[stock],balance_dict[stock],income_dict[stock])
-            #revenue_est_growth = calculate_revenue_growth(random_date,estimations_dict[stock])
             #dividendsPaid = calculate_dividendPaid(random_date,cashflow_dict[stock])
             #current_estimated_eps, future_eps = extract_current_and_future_estim_eps(random_date, estimations_dict[stock])
+            est_eps_growth = safe_divide(safe_subtract(future_eps,current_estimated_eps),current_estimated_eps)
+            peRatio = safe_divide(price_at_date,eps)
             #future_eps = calculate_FutureEps(random_date,estimations_dict[stock])
             #if dividend_payout_ratio is None:
                 #nbr_of_None_evgp_ratio+=1
-            if pe is not None and pe<=PE_UPPER_BOUND and pe>=PE_LOWER_BOUND:
-                if gp is not None and gp<=GP_UPPER_BOUND:
+            if free_cf is not None and free_cf>=FREE_CF_LOWER_BOUND and peRatio is not None and peRatio<=PE_UPPER_BOUND:
+                if est_eps_growth is not None and est_eps_growth>=EPS_GROWTH_LOWER_BOUND and current_est_revenue is not None and current_est_revenue>=EST_REV_LOWER_BOUND:
                     if USE_ML:
-                        features1=['price', 'sma_100d', 'RnD_expenses', 'EV', 'maxPercen_4M', 'max_in_2W', 'pe', 'peg', 'EVEbitdaRatio', 'EVGP', 'fwdPriceTosale', 'fwdPriceTosale_diff', '3M_2M_growth', '1Y_6M_growth', 'combined_valuation_score', 'sma10_yoy_growth']
+                        features1=['price', 'est_eps_growth', 'sma_100d', 'sma_200d', 'month', 'GP', 'netIncome', 'marketCap', 'cashcasheq', 'EV', 'dist_max8M_4M', 'markRevRatio', 'netDebtToPrice', 'dividend_payout_ratio', 'EVGP', 'fwdPriceTosale_diff', 'deriv_6m', 'deriv_min8M']
                         
-                        prediction, buy_probability = predict_buy(model,scaler,features1,random_date,stock,pe,price_at_date,
+                        prediction, buy_probability = predict_buy(model,scaler,features1,random_date,stock,est_eps_growth,price_at_date,
                                                                 sma_10d_dict,sma_50w_dict,sma_100d_dict ,sma_200d_dict ,sma_50d_dict,
-                                                                income_features,market_cap,cashflow_features,estimations_features,balance_features,hist_data_df_for_stock[stock])
+                                                                income_features,market_cap,cashflow_features,estimations_features,balance_features,hist_data_df_for_stock[stock],high_df[stock],low_df[stock])
 
-                        features2=['price', 'month', 'RnD_expenses', 'revenues', 'GP', 'dividendsPaid', 'curr_est_eps', 'EV', 'min_in_4M', 'max_minus_min', 'max_in_8M', 'dist_min8M_4M', 'ebitdaMargin', 'eps_growth', 'peg', 'PS_to_PEG', 'fwdPriceTosale_diff', 'var_sma50D_100D', '1Y_6M_growth', 'combined_valuation_score']
+                        features2=['price', 'sma_100d', 'sma_200d', 'sma_50d', 'sma_10d_4months_ago', 'sma_10d_6months_ago', 'marketCap', 'EV', 'max_minus_min8M', 'debtToPrice', 'pe', 'peg', 'netDebtToPrice', 'dividend_payout_ratio', 'EVEbitdaRatio', 'EVGP', 'deriv_4m', 'deriv_5m', 'deriv_6m', 'sma_50d_to_sma_200d_ratio', 'combined_valuation_score', 'sma10_yoy_growth']
                         
-                        prediction2, buy_probability2 = predict_buy(model2,scaler2,features2,random_date,stock,pe,price_at_date,
+                        prediction2, buy_probability2 = predict_buy(model2,scaler2,features2,random_date,stock,est_eps_growth,price_at_date,
                                                                 sma_10d_dict,sma_50w_dict,sma_100d_dict ,sma_200d_dict ,sma_50d_dict,
-                                                                income_features,market_cap,cashflow_features,estimations_features,balance_features,hist_data_df_for_stock[stock])
+                                                                income_features,market_cap,cashflow_features,estimations_features,balance_features,hist_data_df_for_stock[stock],high_df[stock],low_df[stock])
 
-                        #print(f"stock {stock}  prediction : {prediction}  ")
-                        if prediction ==1 and  buy_probability>=0.975 and prediction2 ==1 and buy_probability2>=0.975:
+                        prediction3, buy_probability3 = predict_buy(model3,scaler2,features2,random_date,stock,est_eps_growth,price_at_date,
+                                                                sma_10d_dict,sma_50w_dict,sma_100d_dict ,sma_200d_dict ,sma_50d_dict,
+                                                                income_features,market_cap,cashflow_features,estimations_features,balance_features,hist_data_df_for_stock[stock],high_df[stock],low_df[stock])
+
+
+                        print(f"stock {stock}  prediction : {prediction}   prediction2 = {prediction2} prediction3 = {prediction3}")
+                        if prediction ==1 and  buy_probability>=0.8 and prediction2 ==1 and buy_probability2>=0.8 and prediction3==1 and buy_probability3>=0.8:
                             if not GRID_SEARCH and i%DEBUG_FREQUENCY==0:
                                 print(f"we will buy {stock} (prob1 = {buy_probability})  (prob2 = {buy_probability2}) ")
-                            stocks_in_range.append((stock, price_at_date,pe))
+                            stocks_in_range.append((stock, price_at_date,est_eps_growth))
                     else:
-                        stocks_in_range.append((stock, price_at_date,pe))
+                        stocks_in_range.append((stock, price_at_date,est_eps_growth))
                 
 
         #if not GRID_SEARCH:
@@ -137,10 +151,6 @@ def simulation():
                         #print(f"                fraction of valid stocks having None pr ratio: {nbr_of_None_evgp_ratio/(len(stocks)-nbr_of_None_income)}")
         if len(stocks_in_range)<=0:
             continue
-        #stocks_in_range.sort(key=lambda x: x[1])
-
-        #budget_per_stock = INTITIAL_CAPTIAL/len(stocks_in_range)
-        budget_per_stock = MIN_BUDGET_BY_STOCK
 
         stocks_to_buy = stocks_in_range
         # if not GRID_SEARCH:
@@ -152,38 +162,25 @@ def simulation():
             stock = stock_to_buy[0]
             initial_price = stock_to_buy[1]
 
-            quantity = int(budget_per_stock/initial_price)
+            quantity = int(MIN_BUDGET_BY_STOCK/initial_price)
             gain_for_this_stock=0
             if buy:
-                max_price_1W = extract_max_price_in_range(random_date,date_after_1W,hist_data_df_for_stock[stock])
-                if max_price_1W is None or initial_price is None:
+                max_price_1W = extract_max_price_in_range(random_date,date_after_1W,high_df[stock])
+                min_price_1W = extract_min_price_in_range(random_date,date_after_1W,low_df[stock])
+                
+                if max_price_1W is None or initial_price is None or min_price_1W is None:
                     continue
-                max_percentage_increase = (max_price_1W - initial_price) / initial_price * 100
-                price_after_1W = extract_stock_price_at_date(date_after_1W,historical_data_for_stock[stock])
-                if price_after_1W is None:
+                price_after_period = extract_stock_price_at_date(date_after_1W,historical_data_for_stock[stock])
+                if price_after_period is None or price_after_period <=0.1:
                     continue
+                max_gain_for_this_stock = (max_price_1W - initial_price)*quantity
+                min_gain_for_this_stock = (min_price_1W - initial_price)*quantity
+                gain_for_this_stock_after_period = (price_after_period - initial_price)*quantity
                 if not GRID_SEARCH:
                     if i%DEBUG_FREQUENCY==0:
-                        print(f"we buy {quantity} of {stock} at {initial_price}$ its max price is {max_price_1W} and after {WAITING_IN_WEEKS} week (on {date_after_1W}) it is {price_after_1W}")
-                if max_percentage_increase >= SELL_LIMIT_PERCENTAGE_1:
-                    gain_for_this_stock= (SELL_LIMIT_PERCENTAGE_1/100)*initial_price*quantity - 2*TRANSACITON_FEE
-                else:
-                    gain_for_this_stock = (price_after_1W - initial_price)*quantity - 2*TRANSACITON_FEE
-                if not GRID_SEARCH:
-                    if i%DEBUG_FREQUENCY==0:
-                        print(f"   -> {gain_for_this_stock} $ (good if it is above {quantity*initial_price*A_GOOD_RETURN})")
-                if gain_for_this_stock >= quantity*initial_price*A_GOOD_RETURN:
-                    nbr_good +=1
-                    unique_stocks.add(stock)
-                    if not GRID_SEARCH and not SAVE_ONLY_BAD_PRED:
-                        data_list.append({
-                            'date': random_date,
-                            'symbol': stock,
-                            'price': initial_price,
-                            'pe_ratio':stock_to_buy[2],
-                            'to_buy': 1
-                        })
-                elif gain_for_this_stock < quantity*initial_price*A_BAD_RETURN:
+                        print(f"we buy {quantity} of {stock} at {initial_price}$ its max price is {max_price_1W}")
+                
+                if min_gain_for_this_stock <=STOP_LOSS_DOLLARS:
                     unique_stocks.add(stock)
                     nbr_bad+=1
                     if not GRID_SEARCH:
@@ -191,11 +188,42 @@ def simulation():
                             'date': random_date,
                             'symbol': stock,
                             'price': initial_price,
-                            'pe_ratio':stock_to_buy[2],
+                            'est_eps_growth':stock_to_buy[2],
                             'to_buy': 0
                         })
+                    if not GRID_SEARCH and i%DEBUG_FREQUENCY==0:
+                        print(f"  -> {STOP_LOSS_DOLLARS} $")
+                    gain_on_that_simul+=STOP_LOSS_DOLLARS    
+                elif max_gain_for_this_stock >= TAKE_PROFIT_DOLLARS:
+                    nbr_good +=1
+                    unique_stocks.add(stock)
+                    if not GRID_SEARCH and not SAVE_ONLY_BAD_PRED:
+                        data_list.append({
+                            'date': random_date,
+                            'symbol': stock,
+                            'price': initial_price,
+                            'est_eps_growth':stock_to_buy[2],
+                            'to_buy': 1
+                        })
+                    if not GRID_SEARCH and i%DEBUG_FREQUENCY==0:
+                        print(f"  -> {TAKE_PROFIT_DOLLARS} $")
+                    gain_on_that_simul+=TAKE_PROFIT_DOLLARS   
+                else:
+                    if gain_for_this_stock_after_period<=BAD_RETURN_DOLLARS:
+                        nbr_bad+=1
+                        if not GRID_SEARCH:
+                            data_list.append({
+                                'date': random_date,
+                                'symbol': stock,
+                                'price': initial_price,
+                                'est_eps_growth':stock_to_buy[2],
+                                'to_buy': 0
+                            })
+                    elif gain_for_this_stock_after_period>=GOOD_RETURN_DOLLARS:
+                        nbr_good+=1
+                    gain_on_that_simul+=gain_for_this_stock_after_period
                 nbr_total+=1
-                gain_on_that_simul+=gain_for_this_stock    
+                
 
         
         if (gain_on_that_simul!=0):
@@ -222,6 +250,7 @@ def simulation():
         total_gain = np.array(total_gain)
         mean = np.mean(total_gain)
         min_stocks,max_stocks = unique_stocks_threshold(SAMPLE_SIZE,NBR_OF_SIMULATION)
+        max_stocks=60
         if nbr_total>0 and len(unique_stocks)>min_stocks and len(unique_stocks)<max_stocks: #this is hardocded if we sample 250 stocks for the simulation
             score = (nbr_good-nbr_bad)/((nbr_total)*WAITING_IN_WEEKS)
             if score >-10:
@@ -244,10 +273,10 @@ if not GRID_SEARCH:
 
 def grid_search_simulation():
     # Define the ranges for each parameter
-    param1_range = [10.3,10.5] 
-    param2_range = [20,24.56,30]
-    param3_range = [-100,-80,-40]
-    param4_range = [88942500.00,222791500,316071625]
+    param1_range = [202972500,282972500,707000000,886000000] 
+    param2_range =[0.11,0.13,0.16,0.25]
+    param3_range = [45,51.51]
+    param4_range = [4875682597,8100127380]
     param5_range = [10]
 
     parameter_combinations = list(itertools.product(param1_range,param2_range,param3_range,param4_range,param5_range))
@@ -256,14 +285,14 @@ def grid_search_simulation():
     best_params = None
 
     for params in parameter_combinations:
-        param1 , param2, param3,param4,param5= params
+        param1 , param2, param3,param4, param5= params
         
 
-        global SELL_LIMIT_PERCENTAGE_1,PE_UPPER_BOUND,PE_LOWER_BOUND,GP_UPPER_BOUND, WAITING_IN_WEEKS
-        SELL_LIMIT_PERCENTAGE_1 = param1
-        PE_UPPER_BOUND = param2
-        PE_LOWER_BOUND = param3
-        GP_UPPER_BOUND = param4
+        global FREE_CF_LOWER_BOUND,EPS_GROWTH_LOWER_BOUND, PE_UPPER_BOUND,EST_REV_LOWER_BOUND,WAITING_IN_WEEKS
+        FREE_CF_LOWER_BOUND = param1
+        EPS_GROWTH_LOWER_BOUND = param2
+        PE_UPPER_BOUND = param3
+        EST_REV_LOWER_BOUND = param4
         WAITING_IN_WEEKS = param5
 
         result = simulation()
@@ -281,10 +310,13 @@ if GRID_SEARCH:
     best_parameters, best_score = grid_search_simulation()
 
     print(f"Best parameters: "
-        f"SELL_LIMIT_PERCENTAGE_1={best_parameters[0]:.2f}, "
-        f"PE_UPPER_BOUND={best_parameters[1]:.2f}",
-        f"PE_LOWER_BOUND={best_parameters[2]:.2f}",
-        f"GP_UPPER_BOUND={best_parameters[3]:.2f}",
+        f"FREE_CF_LOWER_BOUND={best_parameters[0]:.2f}",
+        f"EPS_GROWTH_LOWER_BOUND={best_parameters[1]:.2f}",
+        f"PE_UPPER_BOUND={best_parameters[2]:.2f}",
+        f"EST_REV_LOWER_BOUND={best_parameters[3]:.2f}",
         f"WAITING_IN_WEEKS={best_parameters[4]:.2f}")
     print(f"Best score: {best_score}")
-
+"""
+Best parameters: FREE_CF_LOWER_BOUND=1900000000.00 EPS_GROWTH_LOWER_BOUND=0.20 WAITING_IN_WEEKS=10.00
+Best score: -0.0025367156208277704
+"""
